@@ -1,0 +1,3233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostgreSQL 2026 Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0e14;
+            --bg-card: #131920;
+            --accent-cyan: #00d9ff;
+            --accent-pink: #ff006e;
+            --text-main: #e6e8eb;
+            --text-dim: #7a8291;
+            --border: #1f2937;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 1%;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f2e 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--accent-cyan);
+            padding: 8px 1%;
+            margin: -1% -1% 1% -1%;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.1);
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 6px;
+            margin: 1% 0;
+        }
+
+        .nav-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            opacity: 0.3;
+            transition: left 0.5s;
+        }
+
+        .nav-btn:hover::before {
+            left: 100%;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+            color: var(--bg-dark);
+            font-weight: 700;
+            border-color: transparent;
+        }
+
+        .content {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            display: none;
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent-cyan);
+            padding: 1%;
+            margin: 1% 0;
+            position: relative;
+        }
+
+        .section.active {
+            display: block;
+            animation: slideInSection 0.4s ease-out;
+        }
+
+        @keyframes slideInSection {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 16px;
+            color: var(--accent-cyan);
+            margin: 1% 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h3 {
+            font-size: 13px;
+            color: var(--accent-pink);
+            margin: 1% 0 0.5% 0;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin: 0.5% 0;
+        }
+
+        code {
+            background: var(--bg-dark);
+            color: var(--accent-cyan);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .code-block {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            padding: 1%;
+            margin: 1% 0;
+            overflow-x: auto;
+            font-size: 10px;
+            line-height: 1.5;
+            border-left: 3px solid var(--accent-pink);
+            position: relative;
+        }
+
+        .code-block::before {
+            content: '>';
+            position: absolute;
+            left: 1%;
+            color: var(--accent-cyan);
+            opacity: 0.3;
+        }
+
+        .skill-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+            color: var(--bg-dark);
+            padding: 4px 10px;
+            margin: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+            margin: 1% 0;
+        }
+
+        .skill-card {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            padding: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .skill-card:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        .skill-card h4 {
+            font-size: 11px;
+            color: var(--accent-cyan);
+            margin-bottom: 4px;
+        }
+
+        .skill-card p {
+            font-size: 9px;
+        }
+
+        ul {
+            margin: 0.5% 0 0.5% 2%;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        li {
+            margin: 4px 0;
+            position: relative;
+        }
+
+        li::marker {
+            color: var(--accent-cyan);
+        }
+
+        .highlight {
+            background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.1), transparent);
+            padding: 6px;
+            margin: 1% 0;
+            border-left: 2px solid var(--accent-pink);
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 16px; }
+            h2 { font-size: 14px; }
+            h3 { font-size: 12px; }
+            .nav-btn { font-size: 10px; padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚡ PostgreSQL 2026</h1>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="showSection('basics')">Basics</button>
+        <button class="nav-btn" onclick="showSection('queries')">Queries</button>
+        <button class="nav-btn" onclick="showSection('advanced')">Advanced</button>
+        <button class="nav-btn" onclick="showSection('advancedsql')">Advanced SQL</button>
+        <button class="nav-btn" onclick="showSection('aggregation')">Aggregation</button>
+        <button class="nav-btn" onclick="showSection('joins')">JOIN Mastery</button>
+        <button class="nav-btn" onclick="showSection('datetime')">Date & Time</button>
+        <button class="nav-btn" onclick="showSection('statistics')">Statistics</button>
+        <button class="nav-btn" onclick="showSection('cleaning')">Data Cleaning</button>
+        <button class="nav-btn" onclick="showSection('performance')">Performance</button>
+        <button class="nav-btn" onclick="showSection('admin')">Admin</button>
+        <button class="nav-btn" onclick="showSection('skills')">Skills</button>
+    </div>
+
+    <div class="content">
+        <div id="basics" class="section active">
+            <h2>PostgreSQL Basics</h2>
+            
+            <h3>What is PostgreSQL?</h3>
+            <p>Advanced open-source relational database system with 35+ years of development. Known for reliability, feature robustness, and SQL compliance.</p>
+
+            <h3>Key Features 2026</h3>
+            <ul>
+                <li>ACID compliance with full transactional support</li>
+                <li>Advanced data types (JSON, JSONB, Arrays, Range types)</li>
+                <li>Full-text search and vector similarity search</li>
+                <li>Extensibility with custom functions and extensions</li>
+                <li>Multi-version concurrency control (MVCC)</li>
+                <li>Native partitioning and parallel query execution</li>
+            </ul>
+
+            <h3>Installation Quick Start</h3>
+            <div class="code-block">
+# Ubuntu/Debian<br>
+sudo apt update<br>
+sudo apt install postgresql postgresql-contrib<br><br>
+
+# macOS<br>
+brew install postgresql<br><br>
+
+# Start service<br>
+sudo systemctl start postgresql
+            </div>
+
+            <h3>First Connection</h3>
+            <div class="code-block">
+# Connect as postgres user<br>
+sudo -u postgres psql<br><br>
+
+# Create database<br>
+CREATE DATABASE myapp;<br><br>
+
+# Create user<br>
+CREATE USER myuser WITH PASSWORD 'secure_password';<br><br>
+
+# Grant privileges<br>
+GRANT ALL PRIVILEGES ON DATABASE myapp TO myuser;
+            </div>
+        </div>
+
+        <div id="queries" class="section">
+            <h2>Essential Queries</h2>
+
+            <h3>Database Operations</h3>
+            <div class="code-block">
+-- Create database<br>
+CREATE DATABASE sales_db;<br><br>
+
+-- List databases<br>
+\l<br><br>
+
+-- Switch database<br>
+\c sales_db;<br><br>
+
+-- Drop database<br>
+DROP DATABASE sales_db;
+            </div>
+
+            <h3>Table Creation</h3>
+            <div class="code-block">
+CREATE TABLE users (<br>
+&nbsp;&nbsp;id SERIAL PRIMARY KEY,<br>
+&nbsp;&nbsp;username VARCHAR(50) UNIQUE NOT NULL,<br>
+&nbsp;&nbsp;email VARCHAR(100) UNIQUE NOT NULL,<br>
+&nbsp;&nbsp;created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,<br>
+&nbsp;&nbsp;metadata JSONB<br>
+);
+            </div>
+
+            <h3>CRUD Operations</h3>
+            <div class="code-block">
+-- INSERT<br>
+INSERT INTO users (username, email) <br>
+VALUES ('alice', '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="60010c090305200518010d100c054e030f0d">[email&#160;protected]</a>');<br><br>
+
+-- SELECT<br>
+SELECT * FROM users WHERE created_at > '2026-01-01';<br><br>
+
+-- UPDATE<br>
+UPDATE users SET email = '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="513f3426113429303c213d347f323e3c">[email&#160;protected]</a>' <br>
+WHERE username = 'alice';<br><br>
+
+-- DELETE<br>
+DELETE FROM users WHERE id = 5;
+            </div>
+
+            <h3>JOIN Operations</h3>
+            <div class="code-block">
+-- INNER JOIN<br>
+SELECT u.username, o.total<br>
+FROM users u<br>
+INNER JOIN orders o ON u.id = o.user_id;<br><br>
+
+-- LEFT JOIN<br>
+SELECT u.username, COUNT(o.id) as order_count<br>
+FROM users u<br>
+LEFT JOIN orders o ON u.id = o.user_id<br>
+GROUP BY u.username;
+            </div>
+
+            <h3>Aggregation</h3>
+            <div class="code-block">
+-- Group by with aggregates<br>
+SELECT category, COUNT(*), AVG(price)<br>
+FROM products<br>
+GROUP BY category<br>
+HAVING COUNT(*) > 10<br>
+ORDER BY AVG(price) DESC;
+            </div>
+        </div>
+
+        <div id="advanced" class="section">
+            <h2>Advanced Features</h2>
+
+            <h3>JSONB Operations</h3>
+            <div class="code-block">
+-- Create table with JSONB<br>
+CREATE TABLE events (<br>
+&nbsp;&nbsp;id SERIAL PRIMARY KEY,<br>
+&nbsp;&nbsp;data JSONB<br>
+);<br><br>
+
+-- Insert JSONB data<br>
+INSERT INTO events (data) VALUES <br>
+('{"user": "alice", "action": "login", "ip": "192.168.1.1"}');<br><br>
+
+-- Query JSONB<br>
+SELECT data->>'user' as username<br>
+FROM events<br>
+WHERE data->>'action' = 'login';<br><br>
+
+-- JSONB index<br>
+CREATE INDEX idx_data_action ON events ((data->>'action'));
+            </div>
+
+            <h3>Window Functions</h3>
+            <div class="code-block">
+-- Row number and ranking<br>
+SELECT <br>
+&nbsp;&nbsp;name, salary,<br>
+&nbsp;&nbsp;ROW_NUMBER() OVER (ORDER BY salary DESC) as row_num,<br>
+&nbsp;&nbsp;RANK() OVER (ORDER BY salary DESC) as rank<br>
+FROM employees;<br><br>
+
+-- Partition by department<br>
+SELECT <br>
+&nbsp;&nbsp;name, department, salary,<br>
+&nbsp;&nbsp;AVG(salary) OVER (PARTITION BY department) as dept_avg<br>
+FROM employees;
+            </div>
+
+            <h3>CTEs (Common Table Expressions)</h3>
+            <div class="code-block">
+WITH high_value_customers AS (<br>
+&nbsp;&nbsp;SELECT user_id, SUM(total) as lifetime_value<br>
+&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;GROUP BY user_id<br>
+&nbsp;&nbsp;HAVING SUM(total) > 10000<br>
+)<br>
+SELECT u.username, hvc.lifetime_value<br>
+FROM users u<br>
+JOIN high_value_customers hvc ON u.id = hvc.user_id;
+            </div>
+
+            <h3>Full-Text Search</h3>
+            <div class="code-block">
+-- Add tsvector column<br>
+ALTER TABLE articles <br>
+ADD COLUMN search_vector tsvector;<br><br>
+
+-- Update search vector<br>
+UPDATE articles<br>
+SET search_vector = <br>
+&nbsp;&nbsp;to_tsvector('english', title || ' ' || content);<br><br>
+
+-- Search query<br>
+SELECT title<br>
+FROM articles<br>
+WHERE search_vector @@ to_tsquery('postgresql & performance');<br><br>
+
+-- Create GIN index<br>
+CREATE INDEX idx_search ON articles USING GIN(search_vector);
+            </div>
+
+            <h3>Partitioning</h3>
+            <div class="code-block">
+-- Range partitioning<br>
+CREATE TABLE measurements (<br>
+&nbsp;&nbsp;id SERIAL,<br>
+&nbsp;&nbsp;log_date DATE NOT NULL,<br>
+&nbsp;&nbsp;value NUMERIC<br>
+) PARTITION BY RANGE (log_date);<br><br>
+
+-- Create partitions<br>
+CREATE TABLE measurements_2026_01 <br>
+PARTITION OF measurements<br>
+FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');<br><br>
+
+CREATE TABLE measurements_2026_02<br>
+PARTITION OF measurements<br>
+FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+            </div>
+        </div>
+
+        <div id="performance" class="section">
+            <h2>Performance Optimization</h2>
+
+            <h3>Indexing Strategies</h3>
+            <div class="code-block">
+-- B-tree index (default)<br>
+CREATE INDEX idx_email ON users(email);<br><br>
+
+-- Composite index<br>
+CREATE INDEX idx_user_created ON users(user_id, created_at);<br><br>
+
+-- Partial index<br>
+CREATE INDEX idx_active_users <br>
+ON users(username) WHERE active = true;<br><br>
+
+-- GIN index for arrays/JSONB<br>
+CREATE INDEX idx_tags ON posts USING GIN(tags);<br><br>
+
+-- BRIN index for large sequential data<br>
+CREATE INDEX idx_timestamp <br>
+ON logs USING BRIN(timestamp);
+            </div>
+
+            <h3>Query Analysis</h3>
+            <div class="code-block">
+-- Explain query plan<br>
+EXPLAIN SELECT * FROM users WHERE email = '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a6d2c3d5d2e6c3dec7cbd6cac388c5c9cb">[email&#160;protected]</a>';<br><br>
+
+-- Analyze with execution stats<br>
+EXPLAIN ANALYZE <br>
+SELECT u.name, COUNT(o.id)<br>
+FROM users u<br>
+LEFT JOIN orders o ON u.id = o.user_id<br>
+GROUP BY u.name;<br><br>
+
+-- View slow queries<br>
+SELECT query, calls, total_time, mean_time<br>
+FROM pg_stat_statements<br>
+ORDER BY mean_time DESC<br>
+LIMIT 10;
+            </div>
+
+            <div class="highlight">
+                <h3>Performance Tips</h3>
+                <ul>
+                    <li>Use EXPLAIN ANALYZE to identify slow queries</li>
+                    <li>Create indexes on frequently queried columns</li>
+                    <li>Avoid SELECT * - specify needed columns</li>
+                    <li>Use LIMIT for large result sets</li>
+                    <li>Leverage connection pooling (pgBouncer)</li>
+                    <li>Regular VACUUM and ANALYZE operations</li>
+                    <li>Monitor with pg_stat_statements extension</li>
+                </ul>
+            </div>
+
+            <h3>Vacuum & Maintenance</h3>
+            <div class="code-block">
+-- Manual vacuum<br>
+VACUUM ANALYZE users;<br><br>
+
+-- Full vacuum (locks table)<br>
+VACUUM FULL users;<br><br>
+
+-- Reindex<br>
+REINDEX TABLE users;<br><br>
+
+-- Check table bloat<br>
+SELECT schemaname, tablename, <br>
+&nbsp;&nbsp;pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename))<br>
+FROM pg_tables<br>
+WHERE schemaname = 'public';
+            </div>
+        </div>
+
+        <div id="admin" class="section">
+            <h2>Administration</h2>
+
+            <h3>User Management</h3>
+            <div class="code-block">
+-- Create role<br>
+CREATE ROLE developer LOGIN PASSWORD 'dev_pass';<br><br>
+
+-- Create role with specific privileges<br>
+CREATE ROLE readonly;<br>
+GRANT CONNECT ON DATABASE myapp TO readonly;<br>
+GRANT USAGE ON SCHEMA public TO readonly;<br>
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;<br><br>
+
+-- Alter role<br>
+ALTER ROLE developer WITH SUPERUSER;<br><br>
+
+-- Drop role<br>
+DROP ROLE developer;
+            </div>
+
+            <h3>Backup & Restore</h3>
+            <div class="code-block">
+# Backup single database<br>
+pg_dump myapp > myapp_backup.sql<br><br>
+
+# Backup with compression<br>
+pg_dump -Fc myapp > myapp_backup.dump<br><br>
+
+# Backup all databases<br>
+pg_dumpall > all_databases.sql<br><br>
+
+# Restore database<br>
+psql myapp < myapp_backup.sql<br><br>
+
+# Restore compressed backup<br>
+pg_restore -d myapp myapp_backup.dump
+            </div>
+
+            <h3>Configuration Tuning</h3>
+            <div class="code-block">
+-- View current settings<br>
+SHOW ALL;<br>
+SHOW shared_buffers;<br><br>
+
+-- Common tuning parameters (postgresql.conf)<br>
+# Memory<br>
+shared_buffers = 4GB<br>
+effective_cache_size = 12GB<br>
+work_mem = 64MB<br>
+maintenance_work_mem = 512MB<br><br>
+
+# Connections<br>
+max_connections = 200<br><br>
+
+# WAL<br>
+wal_buffers = 16MB<br>
+checkpoint_completion_target = 0.9
+            </div>
+
+            <h3>Monitoring Queries</h3>
+            <div class="code-block">
+-- Active connections<br>
+SELECT pid, usename, application_name, state<br>
+FROM pg_stat_activity;<br><br>
+
+-- Long running queries<br>
+SELECT pid, now() - query_start as duration, query<br>
+FROM pg_stat_activity<br>
+WHERE state = 'active'<br>
+ORDER BY duration DESC;<br><br>
+
+-- Kill query<br>
+SELECT pg_cancel_backend(pid);<br><br>
+
+-- Terminate connection<br>
+SELECT pg_terminate_backend(pid);
+            </div>
+
+            <h3>Extensions</h3>
+            <div class="code-block">
+-- List available extensions<br>
+SELECT * FROM pg_available_extensions;<br><br>
+
+-- Install extension<br>
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";<br>
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";<br>
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";<br><br>
+
+-- Popular extensions:<br>
+-- PostGIS (geographic data)<br>
+-- pg_stat_statements (query statistics)<br>
+-- pgcrypto (cryptographic functions)<br>
+-- uuid-ossp (UUID generation)
+            </div>
+        </div>
+
+        <div id="advancedsql" class="section">
+            <h2>Advanced SQL Queries</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master CTEs, Subqueries, and Window Functions for complex data analysis</p>
+
+            <h3>Common Table Expressions (CTEs)</h3>
+            <div class="code-block">
+-- Single CTE: Find high-value customers<br>
+WITH customer_totals AS (<br>
+&nbsp;&nbsp;SELECT customer_id, SUM(order_total) AS total_spent<br>
+&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;WHERE status = 'completed'<br>
+&nbsp;&nbsp;GROUP BY customer_id<br>
+)<br>
+SELECT c.customer_name, ct.total_spent<br>
+FROM customer_totals ct<br>
+JOIN customers c ON c.id = ct.customer_id<br>
+WHERE ct.total_spent > 10000;<br><br>
+
+-- Multiple CTEs: Monthly sales comparison<br>
+WITH monthly_sales AS (<br>
+&nbsp;&nbsp;SELECT DATE_TRUNC('month', order_date) AS month,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUM(total) AS sales<br>
+&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;GROUP BY DATE_TRUNC('month', order_date)<br>
+),<br>
+sales_with_previous AS (<br>
+&nbsp;&nbsp;SELECT month, sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LAG(sales) OVER (ORDER BY month) AS prev_month<br>
+&nbsp;&nbsp;FROM monthly_sales<br>
+)<br>
+SELECT month, sales, prev_month,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROUND(((sales - prev_month) / prev_month * 100), 2) AS growth_pct<br>
+FROM sales_with_previous<br>
+WHERE prev_month IS NOT NULL;
+            </div>
+
+            <h3>Subqueries</h3>
+            <div class="code-block">
+-- Scalar subquery in WHERE<br>
+SELECT product_name, price<br>
+FROM products<br>
+WHERE price > (SELECT AVG(price) FROM products);<br><br>
+
+-- EXISTS subquery (faster than IN)<br>
+SELECT name FROM customers c<br>
+WHERE EXISTS (<br>
+&nbsp;&nbsp;SELECT 1 FROM orders o<br>
+&nbsp;&nbsp;WHERE o.customer_id = c.id AND o.amount > 1000<br>
+);<br><br>
+
+-- NOT EXISTS: customers without orders<br>
+SELECT customer_name FROM customers c<br>
+WHERE NOT EXISTS (<br>
+&nbsp;&nbsp;SELECT 1 FROM orders o WHERE o.customer_id = c.id<br>
+);
+            </div>
+
+            <h3>Window Functions</h3>
+            <div class="code-block">
+-- ROW_NUMBER: Number orders per customer<br>
+SELECT customer_id, order_date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS order_num<br>
+FROM orders;<br><br>
+
+-- RANK: Rank products by sales per category<br>
+SELECT category, product_name, sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RANK() OVER (PARTITION BY category ORDER BY sales DESC) AS rank<br>
+FROM products;<br><br>
+
+-- LAG/LEAD: Compare with previous/next period<br>
+SELECT month, revenue,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LAG(revenue) OVER (ORDER BY month) AS prev_month,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LEAD(revenue) OVER (ORDER BY month) AS next_month<br>
+FROM monthly_revenue;<br><br>
+
+-- Running total (cumulative sum)<br>
+SELECT order_date, daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUM(daily_sales) OVER (ORDER BY order_date) AS cumulative_sales<br>
+FROM daily_sales;<br><br>
+
+-- Moving average (7-day)<br>
+SELECT order_date, daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AVG(daily_sales) OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY order_date<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROWS BETWEEN 6 PRECEDING AND CURRENT ROW<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) AS moving_avg_7day<br>
+FROM daily_sales;
+            </div>
+
+            <h3>Recursive CTEs</h3>
+            <div class="code-block">
+-- Employee hierarchy<br>
+WITH RECURSIVE org_hierarchy AS (<br>
+&nbsp;&nbsp;-- Base case: CEO<br>
+&nbsp;&nbsp;SELECT id, name, manager_id, 1 AS level<br>
+&nbsp;&nbsp;FROM employees<br>
+&nbsp;&nbsp;WHERE manager_id IS NULL<br>
+&nbsp;&nbsp;<br>
+&nbsp;&nbsp;UNION ALL<br>
+&nbsp;&nbsp;<br>
+&nbsp;&nbsp;-- Recursive case: direct reports<br>
+&nbsp;&nbsp;SELECT e.id, e.name, e.manager_id, oh.level + 1<br>
+&nbsp;&nbsp;FROM employees e<br>
+&nbsp;&nbsp;JOIN org_hierarchy oh ON e.manager_id = oh.id<br>
+)<br>
+SELECT REPEAT('  ', level - 1) || name AS hierarchy, level<br>
+FROM org_hierarchy<br>
+ORDER BY level, name;
+            </div>
+
+            <h3>Top N per Group Pattern</h3>
+            <div class="code-block">
+-- Top 3 products per category by sales<br>
+WITH ranked_products AS (<br>
+&nbsp;&nbsp;SELECT category, product_name, sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PARTITION BY category<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY sales DESC<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) AS rn<br>
+&nbsp;&nbsp;FROM products<br>
+)<br>
+SELECT category, product_name, sales<br>
+FROM ranked_products<br>
+WHERE rn <= 3<br>
+ORDER BY category, rn;
+            </div>
+
+            <h3>Year-Over-Year Comparison</h3>
+            <div class="code-block">
+WITH monthly_sales AS (<br>
+&nbsp;&nbsp;SELECT DATE_TRUNC('month', order_date) AS month,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUM(amount) AS sales<br>
+&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;GROUP BY DATE_TRUNC('month', order_date)<br>
+)<br>
+SELECT month, sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LAG(sales, 12) OVER (ORDER BY month) AS last_year,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sales - LAG(sales, 12) OVER (ORDER BY month) AS yoy_change,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROUND(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(sales - LAG(sales, 12) OVER (ORDER BY month)) /<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LAG(sales, 12) OVER (ORDER BY month) * 100, 2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) AS yoy_growth_pct<br>
+FROM monthly_sales<br>
+ORDER BY month;
+            </div>
+
+            <div class="highlight">
+                <h3>Performance Tips</h3>
+                <ul>
+                    <li>Window functions are faster than correlated subqueries</li>
+                    <li>Use EXISTS instead of IN for better performance</li>
+                    <li>CTEs improve readability but check execution plans</li>
+                    <li>Index columns used in PARTITION BY and ORDER BY</li>
+                    <li>For LAST_VALUE(), always specify frame clause</li>
+                    <li>Use EXPLAIN ANALYZE to verify performance</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="aggregation" class="section">
+            <h2>Data Aggregation & Grouping</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master GROUP BY, HAVING, ROLLUP, CUBE for powerful data analysis</p>
+
+            <h3>Basic Aggregation Functions</h3>
+            <div class="code-block">
+-- Common aggregate functions<br>
+SELECT <br>
+&nbsp;&nbsp;COUNT(*) AS total_orders,<br>
+&nbsp;&nbsp;COUNT(DISTINCT customer_id) AS unique_customers,<br>
+&nbsp;&nbsp;SUM(amount) AS total_revenue,<br>
+&nbsp;&nbsp;AVG(amount) AS average_order,<br>
+&nbsp;&nbsp;MIN(amount) AS smallest_order,<br>
+&nbsp;&nbsp;MAX(amount) AS largest_order,<br>
+&nbsp;&nbsp;STDDEV(amount) AS std_deviation<br>
+FROM orders<br>
+WHERE order_date >= '2026-01-01';
+            </div>
+
+            <h3>GROUP BY Basics</h3>
+            <div class="code-block">
+-- Group sales by category<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS product_count,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales,<br>
+&nbsp;&nbsp;AVG(sales) AS avg_sales<br>
+FROM products<br>
+GROUP BY category<br>
+ORDER BY total_sales DESC;<br><br>
+
+-- Multiple columns in GROUP BY<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;brand,<br>
+&nbsp;&nbsp;COUNT(*) AS products,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales<br>
+FROM products<br>
+GROUP BY category, brand<br>
+ORDER BY category, total_sales DESC;
+            </div>
+
+            <h3>HAVING Clause - Filter Groups</h3>
+            <div class="code-block">
+-- Filter aggregated results (use HAVING, not WHERE)<br>
+SELECT <br>
+&nbsp;&nbsp;customer_id,<br>
+&nbsp;&nbsp;COUNT(*) AS order_count,<br>
+&nbsp;&nbsp;SUM(amount) AS total_spent<br>
+FROM orders<br>
+GROUP BY customer_id<br>
+HAVING SUM(amount) > 5000  -- Filter after grouping<br>
+&nbsp;&nbsp;AND COUNT(*) >= 3         -- Multiple conditions<br>
+ORDER BY total_spent DESC;<br><br>
+
+-- WHERE filters rows, HAVING filters groups<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS product_count,<br>
+&nbsp;&nbsp;AVG(price) AS avg_price<br>
+FROM products<br>
+WHERE active = true           -- Filter before grouping<br>
+GROUP BY category<br>
+HAVING AVG(price) > 100      -- Filter after grouping<br>
+ORDER BY avg_price DESC;
+            </div>
+
+            <h3>ROLLUP - Subtotals and Grand Total</h3>
+            <div class="code-block">
+-- ROLLUP creates hierarchical subtotals<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;brand,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales<br>
+FROM products<br>
+GROUP BY ROLLUP(category, brand)<br>
+ORDER BY category NULLS FIRST, brand NULLS FIRST;<br><br>
+
+/* Output example:<br>
+category    | brand      | total_sales<br>
+NULL        | NULL       | 50000      -- Grand total<br>
+Electronics | NULL       | 20000      -- Category subtotal<br>
+Electronics | Samsung    | 12000<br>
+Electronics | Apple      | 8000<br>
+Clothing    | NULL       | 30000      -- Category subtotal<br>
+Clothing    | Nike       | 18000<br>
+Clothing    | Adidas     | 12000<br>
+*/<br><br>
+
+-- ROLLUP with single column<br>
+SELECT <br>
+&nbsp;&nbsp;DATE_TRUNC('month', order_date) AS month,<br>
+&nbsp;&nbsp;SUM(amount) AS revenue<br>
+FROM orders<br>
+GROUP BY ROLLUP(DATE_TRUNC('month', order_date))<br>
+ORDER BY month NULLS LAST;
+            </div>
+
+            <h3>CUBE - All Possible Subtotals</h3>
+            <div class="code-block">
+-- CUBE creates all combinations of subtotals<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;region,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales<br>
+FROM sales_data<br>
+GROUP BY CUBE(category, region)<br>
+ORDER BY category NULLS FIRST, region NULLS FIRST;<br><br>
+
+/* Output example:<br>
+category    | region | total_sales<br>
+NULL        | NULL   | 100000     -- Grand total<br>
+NULL        | East   | 40000      -- Region subtotal<br>
+NULL        | West   | 60000      -- Region subtotal<br>
+Electronics | NULL   | 50000      -- Category subtotal<br>
+Electronics | East   | 20000      -- Combination<br>
+Electronics | West   | 30000      -- Combination<br>
+Clothing    | NULL   | 50000      -- Category subtotal<br>
+Clothing    | East   | 20000      -- Combination<br>
+Clothing    | West   | 30000      -- Combination<br>
+*/
+            </div>
+
+            <h3>GROUPING SETS - Custom Aggregations</h3>
+            <div class="code-block">
+-- Specify exactly which groupings you want<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;brand,<br>
+&nbsp;&nbsp;region,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales<br>
+FROM sales_data<br>
+GROUP BY GROUPING SETS (<br>
+&nbsp;&nbsp;(category, brand),      -- Group by category and brand<br>
+&nbsp;&nbsp;(region),               -- Group by region only<br>
+&nbsp;&nbsp;()                      -- Grand total<br>
+)<br>
+ORDER BY category, brand, region;<br><br>
+
+-- Equivalent to UNION ALL of multiple queries<br>
+-- More efficient than running separate queries
+            </div>
+
+            <h3>GROUPING() Function - Identify Subtotal Rows</h3>
+            <div class="code-block">
+-- GROUPING() returns 1 for subtotal rows, 0 for detail rows<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;brand,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales,<br>
+&nbsp;&nbsp;GROUPING(category) AS is_category_total,<br>
+&nbsp;&nbsp;GROUPING(brand) AS is_brand_total,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN GROUPING(category) = 1 THEN 'Grand Total'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN GROUPING(brand) = 1 THEN 'Category Total'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Detail'<br>
+&nbsp;&nbsp;END AS row_type<br>
+FROM products<br>
+GROUP BY ROLLUP(category, brand)<br>
+ORDER BY category NULLS FIRST, brand NULLS FIRST;
+            </div>
+
+            <h3>Advanced Aggregation Examples</h3>
+            <div class="code-block">
+-- Percentage of total<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;SUM(sales) AS category_sales,<br>
+&nbsp;&nbsp;SUM(sales) * 100.0 / SUM(SUM(sales)) OVER () AS pct_of_total<br>
+FROM products<br>
+GROUP BY category<br>
+ORDER BY category_sales DESC;<br><br>
+
+-- Running total within groups<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;sales,<br>
+&nbsp;&nbsp;SUM(sales) OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PARTITION BY category<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY sales DESC<br>
+&nbsp;&nbsp;) AS running_total_in_category<br>
+FROM products<br>
+ORDER BY category, sales DESC;
+            </div>
+
+            <h3>Statistical Aggregations</h3>
+            <div class="code-block">
+-- Statistical functions<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;AVG(price) AS mean_price,<br>
+&nbsp;&nbsp;STDDEV(price) AS std_dev,<br>
+&nbsp;&nbsp;VARIANCE(price) AS variance,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) AS q1,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) AS q3,<br>
+&nbsp;&nbsp;MIN(price) AS min_price,<br>
+&nbsp;&nbsp;MAX(price) AS max_price<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Conditional Aggregation</h3>
+            <div class="code-block">
+-- Aggregate with conditions using FILTER<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS total_products,<br>
+&nbsp;&nbsp;COUNT(*) FILTER (WHERE price > 100) AS expensive_count,<br>
+&nbsp;&nbsp;SUM(sales) AS total_sales,<br>
+&nbsp;&nbsp;SUM(sales) FILTER (WHERE region = 'North') AS north_sales,<br>
+&nbsp;&nbsp;AVG(price) FILTER (WHERE in_stock = true) AS avg_available_price<br>
+FROM products<br>
+GROUP BY category;<br><br>
+
+-- Using CASE in aggregates<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;SUM(CASE WHEN price > 100 THEN 1 ELSE 0 END) AS expensive_count,<br>
+&nbsp;&nbsp;SUM(CASE WHEN region = 'North' THEN sales ELSE 0 END) AS north_sales,<br>
+&nbsp;&nbsp;AVG(CASE WHEN in_stock THEN price END) AS avg_available_price<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Array Aggregation</h3>
+            <div class="code-block">
+-- Collect values into arrays<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;ARRAY_AGG(product_name ORDER BY sales DESC) AS top_products,<br>
+&nbsp;&nbsp;ARRAY_AGG(sales ORDER BY sales DESC) AS sales_values,<br>
+&nbsp;&nbsp;STRING_AGG(product_name, ', ' ORDER BY sales DESC) AS products_list<br>
+FROM products<br>
+GROUP BY category;<br><br>
+
+-- JSON aggregation<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;JSON_AGG(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;JSON_BUILD_OBJECT(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'name', product_name,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'price', price,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'sales', sales<br>
+&nbsp;&nbsp;&nbsp;&nbsp;) ORDER BY sales DESC<br>
+&nbsp;&nbsp;) AS products<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Time-Based Grouping</h3>
+            <div class="code-block">
+-- Group by hour, day, week, month, year<br>
+SELECT <br>
+&nbsp;&nbsp;DATE_TRUNC('day', order_date) AS day,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS daily_revenue<br>
+FROM orders<br>
+GROUP BY DATE_TRUNC('day', order_date)<br>
+ORDER BY day;<br><br>
+
+-- Group by day of week<br>
+SELECT <br>
+&nbsp;&nbsp;TO_CHAR(order_date, 'Day') AS day_name,<br>
+&nbsp;&nbsp;EXTRACT(DOW FROM order_date) AS day_number,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;AVG(amount) AS avg_order<br>
+FROM orders<br>
+GROUP BY day_name, day_number<br>
+ORDER BY day_number;<br><br>
+
+-- Group by hour of day<br>
+SELECT <br>
+&nbsp;&nbsp;EXTRACT(HOUR FROM order_timestamp) AS hour,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS hourly_revenue<br>
+FROM orders<br>
+GROUP BY EXTRACT(HOUR FROM order_timestamp)<br>
+ORDER BY hour;
+            </div>
+
+            <div class="highlight">
+                <h3>Key Differences</h3>
+                <ul>
+                    <li><strong>WHERE:</strong> Filters rows before grouping</li>
+                    <li><strong>HAVING:</strong> Filters groups after aggregation</li>
+                    <li><strong>GROUP BY:</strong> Basic grouping, one result row per group</li>
+                    <li><strong>ROLLUP:</strong> Hierarchical subtotals (right to left)</li>
+                    <li><strong>CUBE:</strong> All possible combinations of subtotals</li>
+                    <li><strong>GROUPING SETS:</strong> Specify exact grouping combinations</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <h3>Performance Tips</h3>
+                <ul>
+                    <li>Index columns used in GROUP BY for better performance</li>
+                    <li>Use HAVING only when necessary (filter with WHERE first)</li>
+                    <li>GROUPING SETS is more efficient than multiple UNION queries</li>
+                    <li>Consider materialized views for frequently-used aggregations</li>
+                    <li>Use EXPLAIN ANALYZE to check query plans</li>
+                    <li>For large datasets, consider partitioning tables</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="joins" class="section">
+            <h2>JOIN Mastery</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master all join types, optimization techniques, and complex join patterns</p>
+
+            <h3>JOIN Types Overview</h3>
+            <div class="code-block">
+/* Visual representation of JOIN types:
+
+INNER JOIN: Only matching rows from both tables
+LEFT JOIN:  All from left + matching from right (NULL if no match)
+RIGHT JOIN: All from right + matching from left (NULL if no match)
+FULL JOIN:  All rows from both (NULL where no match)
+CROSS JOIN: Cartesian product (all combinations)
+*/
+            </div>
+
+            <h3>INNER JOIN - Only Matching Rows</h3>
+            <div class="code-block">
+-- Basic INNER JOIN<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;o.order_id,<br>
+&nbsp;&nbsp;o.order_date,<br>
+&nbsp;&nbsp;o.amount<br>
+FROM customers c<br>
+INNER JOIN orders o ON c.customer_id = o.customer_id<br>
+ORDER BY o.order_date DESC;<br><br>
+
+-- Multiple conditions in JOIN<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;s.store_name,<br>
+&nbsp;&nbsp;i.quantity<br>
+FROM products p<br>
+INNER JOIN inventory i <br>
+&nbsp;&nbsp;ON p.product_id = i.product_id<br>
+&nbsp;&nbsp;AND i.quantity > 0<br>
+INNER JOIN stores s <br>
+&nbsp;&nbsp;ON i.store_id = s.store_id<br>
+WHERE p.active = true;
+            </div>
+
+            <h3>LEFT JOIN - Keep All Left Table Rows</h3>
+            <div class="code-block">
+-- Find customers with their orders (including customers without orders)<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;c.email,<br>
+&nbsp;&nbsp;COUNT(o.order_id) AS order_count,<br>
+&nbsp;&nbsp;COALESCE(SUM(o.amount), 0) AS total_spent<br>
+FROM customers c<br>
+LEFT JOIN orders o ON c.customer_id = o.customer_id<br>
+GROUP BY c.customer_id, c.customer_name, c.email<br>
+ORDER BY total_spent DESC;<br><br>
+
+-- Find customers with NO orders<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;c.email,<br>
+&nbsp;&nbsp;c.signup_date<br>
+FROM customers c<br>
+LEFT JOIN orders o ON c.customer_id = o.customer_id<br>
+WHERE o.order_id IS NULL<br>
+ORDER BY c.signup_date DESC;
+            </div>
+
+            <h3>RIGHT JOIN - Keep All Right Table Rows</h3>
+            <div class="code-block">
+-- Less common, but useful in specific cases<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;c.category_name<br>
+FROM products p<br>
+RIGHT JOIN categories c ON p.category_id = c.category_id<br>
+WHERE p.product_id IS NULL;  -- Categories with no products<br><br>
+
+-- Usually rewritten as LEFT JOIN for clarity<br>
+SELECT <br>
+&nbsp;&nbsp;c.category_name,<br>
+&nbsp;&nbsp;p.product_name<br>
+FROM categories c<br>
+LEFT JOIN products p ON c.category_id = p.category_id<br>
+WHERE p.product_id IS NULL;
+            </div>
+
+            <h3>FULL OUTER JOIN - All Rows From Both</h3>
+            <div class="code-block">
+-- Find all customers and orders, even unmatched<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;o.order_id,<br>
+&nbsp;&nbsp;o.amount,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN c.customer_id IS NULL THEN 'Order without customer'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN o.order_id IS NULL THEN 'Customer without orders'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Matched'<br>
+&nbsp;&nbsp;END AS status<br>
+FROM customers c<br>
+FULL OUTER JOIN orders o ON c.customer_id = o.customer_id<br>
+ORDER BY c.customer_name NULLS LAST;<br><br>
+
+-- Find records that DON'T match<br>
+SELECT <br>
+&nbsp;&nbsp;COALESCE(a.id, b.id) AS id,<br>
+&nbsp;&nbsp;a.value AS table_a_value,<br>
+&nbsp;&nbsp;b.value AS table_b_value<br>
+FROM table_a a<br>
+FULL OUTER JOIN table_b b ON a.id = b.id<br>
+WHERE a.id IS NULL OR b.id IS NULL;
+            </div>
+
+            <h3>CROSS JOIN - Cartesian Product</h3>
+            <div class="code-block">
+-- All combinations (use with caution!)<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;s.size_name,<br>
+&nbsp;&nbsp;c.color_name<br>
+FROM products p<br>
+CROSS JOIN sizes s<br>
+CROSS JOIN colors c<br>
+WHERE p.category = 'Clothing'<br>
+ORDER BY p.product_name, s.size_name, c.color_name;<br><br>
+
+-- Generate date ranges<br>
+SELECT <br>
+&nbsp;&nbsp;dates.date,<br>
+&nbsp;&nbsp;stores.store_name<br>
+FROM (<br>
+&nbsp;&nbsp;SELECT generate_series(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'2026-01-01'::date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'2026-01-31'::date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'1 day'::interval<br>
+&nbsp;&nbsp;)::date AS date<br>
+) dates<br>
+CROSS JOIN stores;
+            </div>
+
+            <h3>SELF JOIN - Join Table to Itself</h3>
+            <div class="code-block">
+-- Find employees and their managers<br>
+SELECT <br>
+&nbsp;&nbsp;e.employee_name AS employee,<br>
+&nbsp;&nbsp;m.employee_name AS manager<br>
+FROM employees e<br>
+LEFT JOIN employees m ON e.manager_id = m.employee_id<br>
+ORDER BY m.employee_name, e.employee_name;<br><br>
+
+-- Find customers in same city<br>
+SELECT <br>
+&nbsp;&nbsp;c1.customer_name AS customer1,<br>
+&nbsp;&nbsp;c2.customer_name AS customer2,<br>
+&nbsp;&nbsp;c1.city<br>
+FROM customers c1<br>
+JOIN customers c2 <br>
+&nbsp;&nbsp;ON c1.city = c2.city<br>
+&nbsp;&nbsp;AND c1.customer_id < c2.customer_id  -- Avoid duplicates<br>
+ORDER BY c1.city, c1.customer_name;<br><br>
+
+-- Find products in same price range<br>
+SELECT <br>
+&nbsp;&nbsp;p1.product_name AS product1,<br>
+&nbsp;&nbsp;p2.product_name AS product2,<br>
+&nbsp;&nbsp;p1.price<br>
+FROM products p1<br>
+JOIN products p2 <br>
+&nbsp;&nbsp;ON ABS(p1.price - p2.price) < 10<br>
+&nbsp;&nbsp;AND p1.product_id != p2.product_id;
+            </div>
+
+            <h3>Multiple Joins - Complex Queries</h3>
+            <div class="code-block">
+-- Join 5+ tables<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;o.order_id,<br>
+&nbsp;&nbsp;o.order_date,<br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;cat.category_name,<br>
+&nbsp;&nbsp;oi.quantity,<br>
+&nbsp;&nbsp;oi.price,<br>
+&nbsp;&nbsp;(oi.quantity * oi.price) AS line_total<br>
+FROM customers c<br>
+INNER JOIN orders o ON c.customer_id = o.customer_id<br>
+INNER JOIN order_items oi ON o.order_id = oi.order_id<br>
+INNER JOIN products p ON oi.product_id = p.product_id<br>
+INNER JOIN categories cat ON p.category_id = cat.category_id<br>
+WHERE o.order_date >= '2026-01-01'<br>
+ORDER BY o.order_date DESC, o.order_id, oi.item_id;
+            </div>
+
+            <h3>LATERAL JOIN - Correlated Subquery</h3>
+            <div class="code-block">
+-- Get top 3 orders per customer<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;recent.order_id,<br>
+&nbsp;&nbsp;recent.order_date,<br>
+&nbsp;&nbsp;recent.amount<br>
+FROM customers c<br>
+CROSS JOIN LATERAL (<br>
+&nbsp;&nbsp;SELECT order_id, order_date, amount<br>
+&nbsp;&nbsp;FROM orders o<br>
+&nbsp;&nbsp;WHERE o.customer_id = c.customer_id<br>
+&nbsp;&nbsp;ORDER BY o.order_date DESC<br>
+&nbsp;&nbsp;LIMIT 3<br>
+) recent<br>
+ORDER BY c.customer_name, recent.order_date DESC;<br><br>
+
+-- Calculate running statistics per group<br>
+SELECT <br>
+&nbsp;&nbsp;p.category,<br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.price,<br>
+&nbsp;&nbsp;stats.avg_price,<br>
+&nbsp;&nbsp;stats.max_price<br>
+FROM products p<br>
+CROSS JOIN LATERAL (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;AVG(price) AS avg_price,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;MAX(price) AS max_price<br>
+&nbsp;&nbsp;FROM products p2<br>
+&nbsp;&nbsp;WHERE p2.category = p.category<br>
+) stats<br>
+WHERE p.price > stats.avg_price;
+            </div>
+
+            <h3>JOIN with Aggregation</h3>
+            <div class="code-block">
+-- Customer order summary<br>
+SELECT <br>
+&nbsp;&nbsp;c.customer_name,<br>
+&nbsp;&nbsp;COUNT(DISTINCT o.order_id) AS total_orders,<br>
+&nbsp;&nbsp;COUNT(oi.item_id) AS total_items,<br>
+&nbsp;&nbsp;SUM(oi.quantity * oi.price) AS total_spent,<br>
+&nbsp;&nbsp;AVG(o.amount) AS avg_order_value,<br>
+&nbsp;&nbsp;MAX(o.order_date) AS last_order_date<br>
+FROM customers c<br>
+LEFT JOIN orders o ON c.customer_id = o.customer_id<br>
+LEFT JOIN order_items oi ON o.order_id = oi.order_id<br>
+GROUP BY c.customer_id, c.customer_name<br>
+HAVING COUNT(o.order_id) > 0<br>
+ORDER BY total_spent DESC;
+            </div>
+
+            <h3>Anti-Join Patterns</h3>
+            <div class="code-block">
+-- Method 1: LEFT JOIN with NULL check<br>
+SELECT c.customer_name<br>
+FROM customers c<br>
+LEFT JOIN orders o ON c.customer_id = o.customer_id<br>
+WHERE o.order_id IS NULL;<br><br>
+
+-- Method 2: NOT EXISTS (usually faster)<br>
+SELECT c.customer_name<br>
+FROM customers c<br>
+WHERE NOT EXISTS (<br>
+&nbsp;&nbsp;SELECT 1 FROM orders o<br>
+&nbsp;&nbsp;WHERE o.customer_id = c.customer_id<br>
+);<br><br>
+
+-- Method 3: NOT IN (careful with NULLs)<br>
+SELECT c.customer_name<br>
+FROM customers c<br>
+WHERE c.customer_id NOT IN (<br>
+&nbsp;&nbsp;SELECT customer_id FROM orders WHERE customer_id IS NOT NULL<br>
+);
+            </div>
+
+            <h3>Semi-Join Patterns</h3>
+            <div class="code-block">
+-- Method 1: EXISTS (efficient)<br>
+SELECT c.customer_name<br>
+FROM customers c<br>
+WHERE EXISTS (<br>
+&nbsp;&nbsp;SELECT 1 FROM orders o<br>
+&nbsp;&nbsp;WHERE o.customer_id = c.customer_id<br>
+&nbsp;&nbsp;AND o.amount > 1000<br>
+);<br><br>
+
+-- Method 2: IN<br>
+SELECT c.customer_name<br>
+FROM customers c<br>
+WHERE c.customer_id IN (<br>
+&nbsp;&nbsp;SELECT customer_id FROM orders WHERE amount > 1000<br>
+);<br><br>
+
+-- Method 3: INNER JOIN with DISTINCT<br>
+SELECT DISTINCT c.customer_name<br>
+FROM customers c<br>
+INNER JOIN orders o ON c.customer_id = o.customer_id<br>
+WHERE o.amount > 1000;
+            </div>
+
+            <h3>JOIN Optimization Techniques</h3>
+            <div class="code-block">
+-- 1. Index foreign keys<br>
+CREATE INDEX idx_orders_customer_id ON orders(customer_id);<br>
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);<br>
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);<br><br>
+
+-- 2. Filter before joining (push down predicates)<br>
+-- BAD: Filter after join<br>
+SELECT c.*, o.*<br>
+FROM customers c<br>
+JOIN orders o ON c.customer_id = o.customer_id<br>
+WHERE o.order_date >= '2026-01-01';<br><br>
+
+-- GOOD: Filter in subquery first<br>
+SELECT c.*, recent_orders.*<br>
+FROM customers c<br>
+JOIN (<br>
+&nbsp;&nbsp;SELECT * FROM orders<br>
+&nbsp;&nbsp;WHERE order_date >= '2026-01-01'<br>
+) recent_orders ON c.customer_id = recent_orders.customer_id;<br><br>
+
+-- 3. Use appropriate JOIN type<br>
+-- If you need all left table rows → LEFT JOIN<br>
+-- If you only need matches → INNER JOIN (faster)<br><br>
+
+-- 4. Join on indexed columns<br>
+-- Ensure JOIN conditions use indexed columns
+            </div>
+
+            <h3>Complex JOIN Example</h3>
+            <div class="code-block">
+-- E-commerce order analysis with multiple joins<br>
+WITH customer_segments AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;customer_id,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WHEN total_spent > 10000 THEN 'VIP'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WHEN total_spent > 5000 THEN 'Premium'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Regular'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;END AS segment<br>
+&nbsp;&nbsp;FROM (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SELECT customer_id, SUM(amount) AS total_spent<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;&nbsp;&nbsp;GROUP BY customer_id<br>
+&nbsp;&nbsp;) totals<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;cs.segment,<br>
+&nbsp;&nbsp;cat.category_name,<br>
+&nbsp;&nbsp;COUNT(DISTINCT o.order_id) AS orders,<br>
+&nbsp;&nbsp;COUNT(DISTINCT c.customer_id) AS customers,<br>
+&nbsp;&nbsp;SUM(oi.quantity) AS items_sold,<br>
+&nbsp;&nbsp;SUM(oi.quantity * oi.price) AS revenue,<br>
+&nbsp;&nbsp;AVG(oi.price) AS avg_item_price<br>
+FROM customer_segments cs<br>
+INNER JOIN customers c ON cs.customer_id = c.customer_id<br>
+INNER JOIN orders o ON c.customer_id = o.customer_id<br>
+INNER JOIN order_items oi ON o.order_id = oi.order_id<br>
+INNER JOIN products p ON oi.product_id = p.product_id<br>
+INNER JOIN categories cat ON p.category_id = cat.category_id<br>
+WHERE o.order_date >= '2026-01-01'<br>
+GROUP BY cs.segment, cat.category_name<br>
+ORDER BY cs.segment, revenue DESC;
+            </div>
+
+            <h3>Conditional JOINs</h3>
+            <div class="code-block">
+-- Different join conditions based on column value<br>
+SELECT <br>
+&nbsp;&nbsp;o.order_id,<br>
+&nbsp;&nbsp;o.order_type,<br>
+&nbsp;&nbsp;COALESCE(r.customer_name, g.customer_name) AS customer<br>
+FROM orders o<br>
+LEFT JOIN retail_customers r <br>
+&nbsp;&nbsp;ON o.customer_id = r.customer_id <br>
+&nbsp;&nbsp;AND o.order_type = 'retail'<br>
+LEFT JOIN wholesale_customers g <br>
+&nbsp;&nbsp;ON o.customer_id = g.customer_id <br>
+&nbsp;&nbsp;AND o.order_type = 'wholesale';
+            </div>
+
+            <h3>Non-Equi JOINs</h3>
+            <div class="code-block">
+-- Join based on ranges or inequalities<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.price,<br>
+&nbsp;&nbsp;pt.tier_name<br>
+FROM products p<br>
+JOIN price_tiers pt <br>
+&nbsp;&nbsp;ON p.price >= pt.min_price <br>
+&nbsp;&nbsp;AND p.price < pt.max_price;<br><br>
+
+-- Overlapping date ranges<br>
+SELECT <br>
+&nbsp;&nbsp;p1.promo_name AS promo1,<br>
+&nbsp;&nbsp;p2.promo_name AS promo2<br>
+FROM promotions p1<br>
+JOIN promotions p2 <br>
+&nbsp;&nbsp;ON p1.promo_id < p2.promo_id<br>
+&nbsp;&nbsp;AND p1.end_date >= p2.start_date<br>
+&nbsp;&nbsp;AND p1.start_date <= p2.end_date;
+            </div>
+
+            <div class="highlight">
+                <h3>JOIN Performance Best Practices</h3>
+                <ul>
+                    <li><strong>Index foreign keys:</strong> Always index columns used in JOIN conditions</li>
+                    <li><strong>Join order matters:</strong> PostgreSQL optimizes, but start with smallest table</li>
+                    <li><strong>Filter early:</strong> Apply WHERE conditions before joins when possible</li>
+                    <li><strong>Use EXPLAIN:</strong> Check query plans to verify join methods</li>
+                    <li><strong>Avoid CROSS JOIN:</strong> Unless truly needed, it creates massive result sets</li>
+                    <li><strong>EXISTS vs IN:</strong> Use EXISTS for better performance with large tables</li>
+                    <li><strong>Limit columns:</strong> SELECT only needed columns, especially with joins</li>
+                    <li><strong>Consider denormalization:</strong> For frequent complex joins</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <h3>Common JOIN Mistakes</h3>
+                <ul>
+                    <li>Forgetting to handle NULLs in LEFT/RIGHT/FULL joins</li>
+                    <li>Using NOT IN with columns that contain NULLs</li>
+                    <li>Cartesian products from missing JOIN conditions</li>
+                    <li>Joining on non-indexed columns</li>
+                    <li>Using RIGHT JOIN instead of rewriting as LEFT JOIN</li>
+                    <li>Not using DISTINCT with semi-join patterns</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="datetime" class="section">
+            <h2>Date & Time Functions</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master time zones, intervals, date arithmetic, and temporal queries</p>
+
+            <h3>Date & Time Data Types</h3>
+            <div class="code-block">
+-- PostgreSQL date/time types<br>
+DATE          -- Date only: '2026-01-19'<br>
+TIME          -- Time only: '14:30:00'<br>
+TIMESTAMP     -- Date + time (no timezone): '2026-01-19 14:30:00'<br>
+TIMESTAMPTZ   -- Date + time (with timezone): '2026-01-19 14:30:00+00'<br>
+INTERVAL      -- Time span: '3 days', '2 hours 30 minutes'<br>
+TIME WITH TIME ZONE  -- Time with timezone (rarely used)<br><br>
+
+-- Best practice: Use TIMESTAMPTZ for timestamps<br>
+CREATE TABLE events (<br>
+&nbsp;&nbsp;id SERIAL PRIMARY KEY,<br>
+&nbsp;&nbsp;event_name VARCHAR(100),<br>
+&nbsp;&nbsp;event_date DATE,<br>
+&nbsp;&nbsp;created_at TIMESTAMPTZ DEFAULT NOW()<br>
+);
+            </div>
+
+            <h3>Current Date & Time Functions</h3>
+            <div class="code-block">
+-- Get current values<br>
+SELECT CURRENT_DATE;                    -- 2026-01-19<br>
+SELECT CURRENT_TIME;                    -- 14:30:45.123456+00<br>
+SELECT CURRENT_TIMESTAMP;               -- 2026-01-19 14:30:45.123456+00<br>
+SELECT NOW();                           -- Same as CURRENT_TIMESTAMP<br>
+SELECT CLOCK_TIMESTAMP();               -- Current time (changes within transaction)<br>
+SELECT TRANSACTION_TIMESTAMP();         -- Transaction start time<br>
+SELECT STATEMENT_TIMESTAMP();           -- Statement start time<br>
+SELECT TIMEOFDAY();                     -- String format<br><br>
+
+-- Practical usage<br>
+INSERT INTO logs (message, logged_at)<br>
+VALUES ('User login', NOW());<br><br>
+
+SELECT * FROM orders<br>
+WHERE order_date = CURRENT_DATE;
+            </div>
+
+            <h3>Date Arithmetic - Adding/Subtracting</h3>
+            <div class="code-block">
+-- Add/subtract intervals<br>
+SELECT NOW() + INTERVAL '1 day';         -- Tomorrow<br>
+SELECT NOW() - INTERVAL '7 days';        -- Week ago<br>
+SELECT NOW() + INTERVAL '3 hours';       -- 3 hours from now<br>
+SELECT NOW() + INTERVAL '1 month';       -- Next month<br>
+SELECT NOW() + INTERVAL '1 year';        -- Next year<br><br>
+
+-- Complex intervals<br>
+SELECT NOW() + INTERVAL '1 year 2 months 3 days';<br>
+SELECT NOW() - INTERVAL '2 hours 30 minutes';<br>
+SELECT NOW() + INTERVAL '90 minutes';    -- 1.5 hours<br><br>
+
+-- Date arithmetic<br>
+SELECT DATE '2026-01-19' + INTEGER '7';  -- Add 7 days<br>
+SELECT DATE '2026-01-19' - INTEGER '7';  -- Subtract 7 days<br>
+SELECT DATE '2026-01-19' - DATE '2026-01-01';  -- Days between<br><br>
+
+-- Practical examples<br>
+SELECT * FROM orders<br>
+WHERE order_date BETWEEN CURRENT_DATE - 7 AND CURRENT_DATE;<br><br>
+
+SELECT * FROM subscriptions<br>
+WHERE expires_at < NOW() + INTERVAL '7 days';  -- Expiring soon
+            </div>
+
+            <h3>Extracting Date/Time Components</h3>
+            <div class="code-block">
+-- EXTRACT function<br>
+SELECT EXTRACT(YEAR FROM NOW());         -- 2026<br>
+SELECT EXTRACT(MONTH FROM NOW());        -- 1<br>
+SELECT EXTRACT(DAY FROM NOW());          -- 19<br>
+SELECT EXTRACT(HOUR FROM NOW());         -- 14<br>
+SELECT EXTRACT(MINUTE FROM NOW());       -- 30<br>
+SELECT EXTRACT(SECOND FROM NOW());       -- 45.123<br>
+SELECT EXTRACT(DOW FROM NOW());          -- Day of week (0=Sunday)<br>
+SELECT EXTRACT(DOY FROM NOW());          -- Day of year (1-366)<br>
+SELECT EXTRACT(WEEK FROM NOW());         -- Week number<br>
+SELECT EXTRACT(QUARTER FROM NOW());      -- Quarter (1-4)<br>
+SELECT EXTRACT(EPOCH FROM NOW());        -- Unix timestamp<br><br>
+
+-- DATE_PART (alternative syntax)<br>
+SELECT DATE_PART('year', NOW());<br>
+SELECT DATE_PART('month', NOW());<br><br>
+
+-- Practical usage<br>
+SELECT <br>
+&nbsp;&nbsp;EXTRACT(YEAR FROM order_date) AS year,<br>
+&nbsp;&nbsp;EXTRACT(MONTH FROM order_date) AS month,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS revenue<br>
+FROM orders<br>
+GROUP BY year, month<br>
+ORDER BY year, month;
+            </div>
+
+            <h3>Date Truncation</h3>
+            <div class="code-block">
+-- DATE_TRUNC - Round down to specified precision<br>
+SELECT DATE_TRUNC('year', NOW());        -- 2026-01-01 00:00:00<br>
+SELECT DATE_TRUNC('month', NOW());       -- 2026-01-01 00:00:00<br>
+SELECT DATE_TRUNC('week', NOW());        -- Monday of current week<br>
+SELECT DATE_TRUNC('day', NOW());         -- Today at midnight<br>
+SELECT DATE_TRUNC('hour', NOW());        -- Current hour start<br>
+SELECT DATE_TRUNC('minute', NOW());      -- Current minute start<br><br>
+
+-- Group by day/month/year<br>
+SELECT <br>
+&nbsp;&nbsp;DATE_TRUNC('day', order_timestamp) AS day,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS daily_revenue<br>
+FROM orders<br>
+GROUP BY day<br>
+ORDER BY day;<br><br>
+
+-- Monthly aggregation<br>
+SELECT <br>
+&nbsp;&nbsp;DATE_TRUNC('month', order_date) AS month,<br>
+&nbsp;&nbsp;COUNT(DISTINCT customer_id) AS unique_customers,<br>
+&nbsp;&nbsp;SUM(amount) AS monthly_revenue<br>
+FROM orders<br>
+WHERE order_date >= '2026-01-01'<br>
+GROUP BY month<br>
+ORDER BY month;
+            </div>
+
+            <h3>Formatting Dates</h3>
+            <div class="code-block">
+-- TO_CHAR - Format dates as strings<br>
+SELECT TO_CHAR(NOW(), 'YYYY-MM-DD');           -- 2026-01-19<br>
+SELECT TO_CHAR(NOW(), 'DD/MM/YYYY');           -- 19/01/2026<br>
+SELECT TO_CHAR(NOW(), 'Month DD, YYYY');       -- January 19, 2026<br>
+SELECT TO_CHAR(NOW(), 'Mon DD, YYYY');         -- Jan 19, 2026<br>
+SELECT TO_CHAR(NOW(), 'Day, DD Month YYYY');   -- Sunday, 19 January 2026<br>
+SELECT TO_CHAR(NOW(), 'HH24:MI:SS');           -- 14:30:45<br>
+SELECT TO_CHAR(NOW(), 'HH12:MI AM');           -- 02:30 PM<br>
+SELECT TO_CHAR(NOW(), 'YYYY-MM-DD HH24:MI:SS'); -- 2026-01-19 14:30:45<br><br>
+
+-- Common format patterns<br>
+YYYY  -- 4-digit year<br>
+YY    -- 2-digit year<br>
+MM    -- Month number (01-12)<br>
+Month -- Full month name<br>
+Mon   -- Abbreviated month<br>
+DD    -- Day of month (01-31)<br>
+Day   -- Full day name<br>
+Dy    -- Abbreviated day<br>
+HH24  -- Hour 00-23<br>
+HH12  -- Hour 01-12<br>
+MI    -- Minutes<br>
+SS    -- Seconds<br>
+AM/PM -- AM or PM<br><br>
+
+-- Practical example<br>
+SELECT <br>
+&nbsp;&nbsp;order_id,<br>
+&nbsp;&nbsp;TO_CHAR(order_date, 'Mon DD, YYYY') AS formatted_date<br>
+FROM orders<br>
+LIMIT 5;
+            </div>
+
+            <h3>Parsing Strings to Dates</h3>
+            <div class="code-block">
+-- TO_DATE - String to DATE<br>
+SELECT TO_DATE('2026-01-19', 'YYYY-MM-DD');<br>
+SELECT TO_DATE('19/01/2026', 'DD/MM/YYYY');<br>
+SELECT TO_DATE('January 19, 2026', 'Month DD, YYYY');<br><br>
+
+-- TO_TIMESTAMP - String to TIMESTAMP<br>
+SELECT TO_TIMESTAMP('2026-01-19 14:30:45', 'YYYY-MM-DD HH24:MI:SS');<br>
+SELECT TO_TIMESTAMP('19/01/2026 2:30 PM', 'DD/MM/YYYY HH12:MI PM');<br><br>
+
+-- Cast shortcuts (if format is standard)<br>
+SELECT '2026-01-19'::DATE;<br>
+SELECT '2026-01-19 14:30:45'::TIMESTAMP;<br>
+SELECT '2026-01-19 14:30:45+00'::TIMESTAMPTZ;<br><br>
+
+-- Parse Unix timestamp<br>
+SELECT TO_TIMESTAMP(1737299445);  -- From epoch seconds
+            </div>
+
+            <h3>Time Zones</h3>
+            <div class="code-block">
+-- Show current timezone<br>
+SHOW TIMEZONE;  -- Usually UTC or local<br><br>
+
+-- Convert to different timezone<br>
+SELECT NOW() AT TIME ZONE 'UTC';<br>
+SELECT NOW() AT TIME ZONE 'America/New_York';<br>
+SELECT NOW() AT TIME ZONE 'Asia/Tokyo';<br>
+SELECT NOW() AT TIME ZONE 'Europe/London';<br><br>
+
+-- Store in UTC, display in user timezone<br>
+SELECT <br>
+&nbsp;&nbsp;created_at AS utc_time,<br>
+&nbsp;&nbsp;created_at AT TIME ZONE 'America/Los_Angeles' AS la_time,<br>
+&nbsp;&nbsp;created_at AT TIME ZONE 'Asia/Singapore' AS singapore_time<br>
+FROM events;<br><br>
+
+-- Set timezone for session<br>
+SET TIMEZONE = 'America/New_York';<br>
+SET TIMEZONE = 'UTC';<br><br>
+
+-- Get timezone offset<br>
+SELECT EXTRACT(TIMEZONE FROM NOW());  -- Offset in seconds<br>
+SELECT EXTRACT(TIMEZONE_HOUR FROM NOW());  -- Hour component
+            </div>
+
+            <h3>Age & Date Differences</h3>
+            <div class="code-block">
+-- AGE function - Time difference as interval<br>
+SELECT AGE(NOW(), '1990-05-15');  -- 35 years 8 mons 4 days<br>
+SELECT AGE('2026-12-31', '2026-01-01');  -- 11 mons 30 days<br><br>
+
+-- Age in years<br>
+SELECT <br>
+&nbsp;&nbsp;birth_date,<br>
+&nbsp;&nbsp;AGE(birth_date) AS age,<br>
+&nbsp;&nbsp;EXTRACT(YEAR FROM AGE(birth_date)) AS years_old<br>
+FROM users;<br><br>
+
+-- Difference in days<br>
+SELECT DATE '2026-12-31' - DATE '2026-01-01' AS days;<br><br>
+
+-- Difference in seconds<br>
+SELECT EXTRACT(EPOCH FROM <br>
+&nbsp;&nbsp;'2026-01-19 15:00:00'::TIMESTAMP - '2026-01-19 14:30:00'::TIMESTAMP<br>
+) AS seconds;<br><br>
+
+-- Business days between dates (excluding weekends)<br>
+SELECT COUNT(*)<br>
+FROM generate_series(<br>
+&nbsp;&nbsp;'2026-01-01'::DATE,<br>
+&nbsp;&nbsp;'2026-01-31'::DATE,<br>
+&nbsp;&nbsp;'1 day'::INTERVAL<br>
+) AS day<br>
+WHERE EXTRACT(DOW FROM day) NOT IN (0, 6);  -- Not Sunday or Saturday
+            </div>
+
+            <h3>Generate Date Series</h3>
+            <div class="code-block">
+-- Generate daily series<br>
+SELECT generate_series(<br>
+&nbsp;&nbsp;'2026-01-01'::DATE,<br>
+&nbsp;&nbsp;'2026-01-31'::DATE,<br>
+&nbsp;&nbsp;'1 day'::INTERVAL<br>
+)::DATE AS day;<br><br>
+
+-- Generate hourly series<br>
+SELECT generate_series(<br>
+&nbsp;&nbsp;'2026-01-19 00:00:00'::TIMESTAMP,<br>
+&nbsp;&nbsp;'2026-01-19 23:00:00'::TIMESTAMP,<br>
+&nbsp;&nbsp;'1 hour'::INTERVAL<br>
+) AS hour;<br><br>
+
+-- Practical: Fill missing dates with zeros<br>
+WITH date_range AS (<br>
+&nbsp;&nbsp;SELECT generate_series(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'2026-01-01'::DATE,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'2026-01-31'::DATE,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'1 day'::INTERVAL<br>
+&nbsp;&nbsp;)::DATE AS day<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;d.day,<br>
+&nbsp;&nbsp;COALESCE(COUNT(o.order_id), 0) AS orders,<br>
+&nbsp;&nbsp;COALESCE(SUM(o.amount), 0) AS revenue<br>
+FROM date_range d<br>
+LEFT JOIN orders o ON d.day = o.order_date<br>
+GROUP BY d.day<br>
+ORDER BY d.day;
+            </div>
+
+            <h3>Intervals - Duration Calculations</h3>
+            <div class="code-block">
+-- Create intervals<br>
+SELECT INTERVAL '1 day';<br>
+SELECT INTERVAL '3 hours 20 minutes';<br>
+SELECT INTERVAL '2 weeks';<br>
+SELECT INTERVAL '1 year 2 months';<br><br>
+
+-- Interval arithmetic<br>
+SELECT INTERVAL '1 hour' + INTERVAL '30 minutes';  -- 01:30:00<br>
+SELECT INTERVAL '2 days' * 3;                      -- 6 days<br>
+SELECT INTERVAL '1 hour' / 2;                      -- 00:30:00<br><br>
+
+-- Calculate duration<br>
+SELECT <br>
+&nbsp;&nbsp;order_id,<br>
+&nbsp;&nbsp;created_at,<br>
+&nbsp;&nbsp;completed_at,<br>
+&nbsp;&nbsp;completed_at - created_at AS processing_time,<br>
+&nbsp;&nbsp;EXTRACT(EPOCH FROM (completed_at - created_at)) / 60 AS minutes<br>
+FROM orders<br>
+WHERE completed_at IS NOT NULL;<br><br>
+
+-- Average processing time<br>
+SELECT AVG(completed_at - created_at) AS avg_processing_time<br>
+FROM orders<br>
+WHERE completed_at IS NOT NULL;
+            </div>
+
+            <h3>Date Ranges & Overlaps</h3>
+            <div class="code-block">
+-- Check if date is in range<br>
+SELECT * FROM promotions<br>
+WHERE CURRENT_DATE BETWEEN start_date AND end_date;<br><br>
+
+-- Overlapping date ranges<br>
+SELECT <br>
+&nbsp;&nbsp;p1.promo_name AS promo1,<br>
+&nbsp;&nbsp;p2.promo_name AS promo2<br>
+FROM promotions p1<br>
+JOIN promotions p2 <br>
+&nbsp;&nbsp;ON p1.promo_id < p2.promo_id<br>
+&nbsp;&nbsp;AND (p1.start_date, p1.end_date) OVERLAPS (p2.start_date, p2.end_date);<br><br>
+
+-- Using range types (more efficient)<br>
+CREATE TABLE bookings (<br>
+&nbsp;&nbsp;id SERIAL PRIMARY KEY,<br>
+&nbsp;&nbsp;room_id INT,<br>
+&nbsp;&nbsp;booking_period DATERANGE,<br>
+&nbsp;&nbsp;EXCLUDE USING GIST (room_id WITH =, booking_period WITH &&)<br>
+);<br><br>
+
+-- Query with ranges<br>
+INSERT INTO bookings (room_id, booking_period)<br>
+VALUES (1, '[2026-01-19, 2026-01-22)');<br><br>
+
+SELECT * FROM bookings<br>
+WHERE booking_period @> '2026-01-20'::DATE;  -- Contains date
+            </div>
+
+            <h3>Day of Week & Time Analysis</h3>
+            <div class="code-block">
+-- Sales by day of week<br>
+SELECT <br>
+&nbsp;&nbsp;TO_CHAR(order_date, 'Day') AS day_name,<br>
+&nbsp;&nbsp;EXTRACT(DOW FROM order_date) AS day_num,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS revenue<br>
+FROM orders<br>
+GROUP BY day_name, day_num<br>
+ORDER BY day_num;<br><br>
+
+-- Sales by hour of day<br>
+SELECT <br>
+&nbsp;&nbsp;EXTRACT(HOUR FROM order_timestamp) AS hour,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;AVG(amount) AS avg_order<br>
+FROM orders<br>
+GROUP BY hour<br>
+ORDER BY hour;<br><br>
+
+-- Weekend vs weekday<br>
+SELECT <br>
+&nbsp;&nbsp;CASE <br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN EXTRACT(DOW FROM order_date) IN (0, 6) THEN 'Weekend'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Weekday'<br>
+&nbsp;&nbsp;END AS day_type,<br>
+&nbsp;&nbsp;COUNT(*) AS orders,<br>
+&nbsp;&nbsp;SUM(amount) AS revenue<br>
+FROM orders<br>
+GROUP BY day_type;
+            </div>
+
+            <h3>Fiscal & Custom Calendars</h3>
+            <div class="code-block">
+-- Fiscal year (starts in April)<br>
+SELECT <br>
+&nbsp;&nbsp;order_date,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN EXTRACT(MONTH FROM order_date) >= 4 THEN EXTRACT(YEAR FROM order_date)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE EXTRACT(YEAR FROM order_date) - 1<br>
+&nbsp;&nbsp;END AS fiscal_year,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN EXTRACT(MONTH FROM order_date) >= 4 <br>
+&nbsp;&nbsp;&nbsp;&nbsp;THEN EXTRACT(MONTH FROM order_date) - 3<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE EXTRACT(MONTH FROM order_date) + 9<br>
+&nbsp;&nbsp;END AS fiscal_month<br>
+FROM orders;<br><br>
+
+-- ISO week (week starts Monday)<br>
+SELECT <br>
+&nbsp;&nbsp;order_date,<br>
+&nbsp;&nbsp;EXTRACT(ISOYEAR FROM order_date) AS iso_year,<br>
+&nbsp;&nbsp;EXTRACT(WEEK FROM order_date) AS iso_week<br>
+FROM orders;
+            </div>
+
+            <h3>Relative Date Queries</h3>
+            <div class="code-block">
+-- Today, yesterday, this week, etc.<br>
+-- Today<br>
+WHERE order_date = CURRENT_DATE<br><br>
+
+-- Yesterday<br>
+WHERE order_date = CURRENT_DATE - 1<br><br>
+
+-- This week (Monday to Sunday)<br>
+WHERE order_date >= DATE_TRUNC('week', CURRENT_DATE)<br>
+&nbsp;&nbsp;AND order_date < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '1 week'<br><br>
+
+-- Last 7 days<br>
+WHERE order_date >= CURRENT_DATE - 6<br><br>
+
+-- This month<br>
+WHERE order_date >= DATE_TRUNC('month', CURRENT_DATE)<br>
+&nbsp;&nbsp;AND order_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'<br><br>
+
+-- Last 30 days<br>
+WHERE order_date >= CURRENT_DATE - 29<br><br>
+
+-- This quarter<br>
+WHERE order_date >= DATE_TRUNC('quarter', CURRENT_DATE)<br>
+&nbsp;&nbsp;AND order_date < DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'<br><br>
+
+-- This year<br>
+WHERE EXTRACT(YEAR FROM order_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+            </div>
+
+            <div class="highlight">
+                <h3>Best Practices</h3>
+                <ul>
+                    <li><strong>Use TIMESTAMPTZ:</strong> Always store timestamps with timezone</li>
+                    <li><strong>Store in UTC:</strong> Convert to user timezone on display</li>
+                    <li><strong>Index date columns:</strong> Especially for range queries</li>
+                    <li><strong>Use DATE_TRUNC:</strong> For grouping by time periods</li>
+                    <li><strong>Avoid functions in WHERE:</strong> <code>WHERE date >= '2026-01-01'</code> not <code>WHERE EXTRACT(YEAR FROM date) = 2026</code></li>
+                    <li><strong>Use BETWEEN carefully:</strong> It's inclusive on both ends</li>
+                    <li><strong>Handle timezones:</strong> Be explicit about timezone conversions</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <h3>Common Patterns</h3>
+                <ul>
+                    <li>Rolling 30-day metrics: <code>WHERE date >= CURRENT_DATE - 29</code></li>
+                    <li>Month-to-date: <code>WHERE date >= DATE_TRUNC('month', CURRENT_DATE)</code></li>
+                    <li>Same day last year: <code>WHERE date = CURRENT_DATE - INTERVAL '1 year'</code></li>
+                    <li>Business days: Filter out weekends with <code>EXTRACT(DOW FROM date) NOT IN (0, 6)</code></li>
+                    <li>Age calculation: <code>EXTRACT(YEAR FROM AGE(birth_date))</code></li>
+                    <li>Duration: <code>EXTRACT(EPOCH FROM end_time - start_time) / 3600</code> for hours</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="statistics" class="section">
+            <h2>Statistical Functions</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master statistical analysis with AVG, STDDEV, PERCENTILE, correlation, and advanced analytics</p>
+
+            <h3>Basic Statistical Functions</h3>
+            <div class="code-block">
+-- Central tendency<br>
+SELECT <br>
+&nbsp;&nbsp;COUNT(*) AS n,                          -- Sample size<br>
+&nbsp;&nbsp;AVG(price) AS mean,                     -- Average<br>
+&nbsp;&nbsp;MIN(price) AS minimum,<br>
+&nbsp;&nbsp;MAX(price) AS maximum,<br>
+&nbsp;&nbsp;SUM(price) AS total<br>
+FROM products;<br><br>
+
+-- By category<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;AVG(price) AS mean_price,<br>
+&nbsp;&nbsp;MIN(price) AS min_price,<br>
+&nbsp;&nbsp;MAX(price) AS max_price<br>
+FROM products<br>
+GROUP BY category<br>
+ORDER BY mean_price DESC;
+            </div>
+
+            <h3>Variance & Standard Deviation</h3>
+            <div class="code-block">
+-- Sample vs Population statistics<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;AVG(price) AS mean,<br>
+&nbsp;&nbsp;VARIANCE(price) AS sample_variance,      -- VAR_SAMP<br>
+&nbsp;&nbsp;VAR_POP(price) AS pop_variance,          -- Population variance<br>
+&nbsp;&nbsp;STDDEV(price) AS sample_stddev,          -- STDDEV_SAMP<br>
+&nbsp;&nbsp;STDDEV_POP(price) AS pop_stddev          -- Population stddev<br>
+FROM products<br>
+GROUP BY category;<br><br>
+
+-- Coefficient of variation (relative variability)<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;AVG(price) AS mean,<br>
+&nbsp;&nbsp;STDDEV(price) AS stddev,<br>
+&nbsp;&nbsp;CASE <br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN AVG(price) > 0 <br>
+&nbsp;&nbsp;&nbsp;&nbsp;THEN STDDEV(price) / AVG(price) * 100<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE NULL<br>
+&nbsp;&nbsp;END AS coef_variation_pct<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Percentiles & Quartiles</h3>
+            <div class="code-block">
+-- PERCENTILE_CONT - Continuous (interpolated)<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) AS q1,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY price) AS median,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) AS q3,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY price) AS p90,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY price) AS p95,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY price) AS p99<br>
+FROM products<br>
+GROUP BY category;<br><br>
+
+-- PERCENTILE_DISC - Discrete (actual value from dataset)<br>
+SELECT <br>
+&nbsp;&nbsp;PERCENTILE_DISC(0.50) WITHIN GROUP (ORDER BY price) AS median_actual<br>
+FROM products;<br><br>
+
+-- Multiple percentiles at once<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(ARRAY[0.25, 0.5, 0.75]) <br>
+&nbsp;&nbsp;&nbsp;&nbsp;WITHIN GROUP (ORDER BY price) AS quartiles<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Interquartile Range (IQR)</h3>
+            <div class="code-block">
+-- Calculate IQR and detect outliers<br>
+WITH stats AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) AS q1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) AS q3<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;GROUP BY category<br>
+),<br>
+iqr_calc AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;q1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;q3,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;q3 - q1 AS iqr,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;q1 - 1.5 * (q3 - q1) AS lower_fence,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;q3 + 1.5 * (q3 - q1) AS upper_fence<br>
+&nbsp;&nbsp;FROM stats<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.category,<br>
+&nbsp;&nbsp;p.price,<br>
+&nbsp;&nbsp;i.lower_fence,<br>
+&nbsp;&nbsp;i.upper_fence,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN p.price < i.lower_fence OR p.price > i.upper_fence <br>
+&nbsp;&nbsp;&nbsp;&nbsp;THEN 'Outlier'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Normal'<br>
+&nbsp;&nbsp;END AS status<br>
+FROM products p<br>
+JOIN iqr_calc i ON p.category = i.category<br>
+WHERE p.price < i.lower_fence OR p.price > i.upper_fence<br>
+ORDER BY p.category, p.price;
+            </div>
+
+            <h3>Mode - Most Frequent Value</h3>
+            <div class="code-block">
+-- MODE() - Most common value<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;MODE() WITHIN GROUP (ORDER BY price) AS most_common_price<br>
+FROM products<br>
+GROUP BY category;<br><br>
+
+-- Multiple modes (all tied values)<br>
+SELECT <br>
+&nbsp;&nbsp;price,<br>
+&nbsp;&nbsp;COUNT(*) AS frequency<br>
+FROM products<br>
+WHERE category = 'Electronics'<br>
+GROUP BY price<br>
+HAVING COUNT(*) = (<br>
+&nbsp;&nbsp;SELECT MAX(freq)<br>
+&nbsp;&nbsp;FROM (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SELECT COUNT(*) AS freq<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHERE category = 'Electronics'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;GROUP BY price<br>
+&nbsp;&nbsp;) counts<br>
+)<br>
+ORDER BY price;
+            </div>
+
+            <h3>Correlation Analysis</h3>
+            <div class="code-block">
+-- CORR - Pearson correlation coefficient (-1 to 1)<br>
+SELECT <br>
+&nbsp;&nbsp;CORR(price, rating) AS price_rating_correlation,<br>
+&nbsp;&nbsp;CORR(price, sales) AS price_sales_correlation,<br>
+&nbsp;&nbsp;CORR(rating, sales) AS rating_sales_correlation<br>
+FROM products;<br><br>
+
+-- By category<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;CORR(price, rating) AS correlation,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN CORR(price, rating) > 0.7 THEN 'Strong Positive'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN CORR(price, rating) > 0.3 THEN 'Moderate Positive'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN CORR(price, rating) > -0.3 THEN 'Weak/No Correlation'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN CORR(price, rating) > -0.7 THEN 'Moderate Negative'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Strong Negative'<br>
+&nbsp;&nbsp;END AS interpretation<br>
+FROM products<br>
+GROUP BY category<br>
+HAVING COUNT(*) >= 10;  -- Need sufficient sample size
+            </div>
+
+            <h3>Covariance</h3>
+            <div class="code-block">
+-- Covariance - Measure of joint variability<br>
+SELECT <br>
+&nbsp;&nbsp;COVAR_SAMP(price, rating) AS sample_covariance,<br>
+&nbsp;&nbsp;COVAR_POP(price, rating) AS pop_covariance<br>
+FROM products;<br><br>
+
+-- Covariance by category<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COVAR_SAMP(price, sales) AS price_sales_covar,<br>
+&nbsp;&nbsp;STDDEV(price) AS price_stddev,<br>
+&nbsp;&nbsp;STDDEV(sales) AS sales_stddev<br>
+FROM products<br>
+GROUP BY category;
+            </div>
+
+            <h3>Linear Regression</h3>
+            <div class="code-block">
+-- REGR_* functions for linear regression<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;REGR_SLOPE(sales, price) AS slope,           -- β1 (change in Y per unit X)<br>
+&nbsp;&nbsp;REGR_INTERCEPT(sales, price) AS intercept,   -- β0 (Y when X=0)<br>
+&nbsp;&nbsp;REGR_R2(sales, price) AS r_squared,          -- Goodness of fit (0-1)<br>
+&nbsp;&nbsp;REGR_COUNT(sales, price) AS valid_pairs,     -- Non-null pairs<br>
+&nbsp;&nbsp;REGR_AVGX(sales, price) AS avg_price,        -- Average X<br>
+&nbsp;&nbsp;REGR_AVGY(sales, price) AS avg_sales         -- Average Y<br>
+FROM products<br>
+GROUP BY category<br>
+HAVING COUNT(*) >= 10;<br><br>
+
+-- Predict sales based on price<br>
+WITH regression AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;REGR_SLOPE(sales, price) AS slope,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;REGR_INTERCEPT(sales, price) AS intercept<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;WHERE category = 'Electronics'<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;50 AS price,<br>
+&nbsp;&nbsp;ROUND(r.intercept + r.slope * 50, 2) AS predicted_sales<br>
+FROM regression r;
+            </div>
+
+            <h3>Statistical Summary Report</h3>
+            <div class="code-block">
+-- Comprehensive statistical summary<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;-- Sample size<br>
+&nbsp;&nbsp;COUNT(*) AS n,<br>
+&nbsp;&nbsp;-- Central tendency<br>
+&nbsp;&nbsp;ROUND(AVG(price)::NUMERIC, 2) AS mean,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price) AS median,<br>
+&nbsp;&nbsp;MODE() WITHIN GROUP (ORDER BY price) AS mode,<br>
+&nbsp;&nbsp;-- Spread<br>
+&nbsp;&nbsp;MIN(price) AS min,<br>
+&nbsp;&nbsp;MAX(price) AS max,<br>
+&nbsp;&nbsp;MAX(price) - MIN(price) AS range,<br>
+&nbsp;&nbsp;ROUND(STDDEV(price)::NUMERIC, 2) AS std_dev,<br>
+&nbsp;&nbsp;ROUND(VARIANCE(price)::NUMERIC, 2) AS variance,<br>
+&nbsp;&nbsp;-- Quartiles<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) AS q1,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) AS q3,<br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY price) - <br>
+&nbsp;&nbsp;PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY price) AS iqr<br>
+FROM products<br>
+GROUP BY category<br>
+ORDER BY mean DESC;
+            </div>
+
+            <h3>Z-Score - Standardization</h3>
+            <div class="code-block">
+-- Calculate z-scores (standard scores)<br>
+WITH stats AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;AVG(price) AS mean,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;STDDEV(price) AS stddev<br>
+&nbsp;&nbsp;FROM products<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.price,<br>
+&nbsp;&nbsp;ROUND(((p.price - s.mean) / s.stddev)::NUMERIC, 2) AS z_score,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN ABS((p.price - s.mean) / s.stddev) > 3 THEN 'Extreme'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN ABS((p.price - s.mean) / s.stddev) > 2 THEN 'Unusual'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Normal'<br>
+&nbsp;&nbsp;END AS status<br>
+FROM products p, stats s<br>
+WHERE s.stddev > 0<br>
+ORDER BY z_score DESC;
+            </div>
+
+            <h3>Normalization - Min-Max Scaling</h3>
+            <div class="code-block">
+-- Scale values to 0-1 range<br>
+WITH bounds AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;MIN(price) AS min_price,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;MAX(price) AS max_price<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;GROUP BY category<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.category,<br>
+&nbsp;&nbsp;p.price,<br>
+&nbsp;&nbsp;ROUND(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((p.price - b.min_price)::NUMERIC / <br>
+&nbsp;&nbsp;&nbsp;&nbsp;NULLIF(b.max_price - b.min_price, 0))::NUMERIC, <br>
+&nbsp;&nbsp;&nbsp;&nbsp;3<br>
+&nbsp;&nbsp;) AS normalized_price<br>
+FROM products p<br>
+JOIN bounds b ON p.category = b.category<br>
+ORDER BY p.category, normalized_price DESC;
+            </div>
+
+            <h3>Skewness & Kurtosis (Using Moments)</h3>
+            <div class="code-block">
+-- Calculate higher moments for distribution shape<br>
+WITH moments AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;AVG(price) AS mean,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;STDDEV(price) AS stddev,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;COUNT(*) AS n<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;GROUP BY category<br>
+),<br>
+deviations AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;p.category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;POWER((p.price - m.mean) / m.stddev, 3) AS m3,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;POWER((p.price - m.mean) / m.stddev, 4) AS m4<br>
+&nbsp;&nbsp;FROM products p<br>
+&nbsp;&nbsp;JOIN moments m ON p.category = m.category<br>
+&nbsp;&nbsp;WHERE m.stddev > 0<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;ROUND(AVG(m3)::NUMERIC, 3) AS skewness,<br>
+&nbsp;&nbsp;ROUND(AVG(m4)::NUMERIC, 3) AS kurtosis,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN AVG(m3) > 1 THEN 'Right-skewed (tail on right)'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN AVG(m3) < -1 THEN 'Left-skewed (tail on left)'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Approximately symmetric'<br>
+&nbsp;&nbsp;END AS distribution_shape<br>
+FROM deviations<br>
+GROUP BY category;
+            </div>
+
+            <h3>Moving Statistics - Rolling Windows</h3>
+            <div class="code-block">
+-- Rolling average and standard deviation<br>
+SELECT <br>
+&nbsp;&nbsp;order_date,<br>
+&nbsp;&nbsp;daily_sales,<br>
+&nbsp;&nbsp;AVG(daily_sales) OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY order_date<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ROWS BETWEEN 6 PRECEDING AND CURRENT ROW<br>
+&nbsp;&nbsp;) AS moving_avg_7day,<br>
+&nbsp;&nbsp;STDDEV(daily_sales) OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY order_date<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ROWS BETWEEN 6 PRECEDING AND CURRENT ROW<br>
+&nbsp;&nbsp;) AS moving_stddev_7day<br>
+FROM (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;order_date::DATE,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SUM(amount) AS daily_sales<br>
+&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;GROUP BY order_date::DATE<br>
+) daily<br>
+ORDER BY order_date;
+            </div>
+
+            <h3>Exponential Moving Average (EMA)</h3>
+            <div class="code-block">
+-- Simple implementation of exponential moving average<br>
+WITH RECURSIVE ema_calc AS (<br>
+&nbsp;&nbsp;-- Base case: first value<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;order_date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;daily_sales AS ema,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;1 AS rn<br>
+&nbsp;&nbsp;FROM (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;order_date::DATE AS order_date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUM(amount) AS daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (ORDER BY order_date::DATE) AS rn<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;&nbsp;&nbsp;GROUP BY order_date::DATE<br>
+&nbsp;&nbsp;) d<br>
+&nbsp;&nbsp;WHERE rn = 1<br>
+&nbsp;&nbsp;<br>
+&nbsp;&nbsp;UNION ALL<br>
+&nbsp;&nbsp;<br>
+&nbsp;&nbsp;-- Recursive case: EMA = α × current + (1-α) × previous_ema<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;d.order_date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;d.daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;0.2 * d.daily_sales + 0.8 * e.ema AS ema,  -- α = 0.2 (smoothing factor)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;d.rn<br>
+&nbsp;&nbsp;FROM (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;order_date::DATE AS order_date,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUM(amount) AS daily_sales,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (ORDER BY order_date::DATE) AS rn<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FROM orders<br>
+&nbsp;&nbsp;&nbsp;&nbsp;GROUP BY order_date::DATE<br>
+&nbsp;&nbsp;) d<br>
+&nbsp;&nbsp;JOIN ema_calc e ON d.rn = e.rn + 1<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;order_date,<br>
+&nbsp;&nbsp;daily_sales,<br>
+&nbsp;&nbsp;ROUND(ema::NUMERIC, 2) AS exponential_moving_avg<br>
+FROM ema_calc<br>
+ORDER BY order_date;
+            </div>
+
+            <h3>Binning - Discretization</h3>
+            <div class="code-block">
+-- Equal-width binning<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;price,<br>
+&nbsp;&nbsp;WIDTH_BUCKET(price, 0, 1000, 10) AS price_bin,<br>
+&nbsp;&nbsp;CASE WIDTH_BUCKET(price, 0, 1000, 10)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 1 THEN '$0-$100'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 2 THEN '$100-$200'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 3 THEN '$200-$300'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE '$300+'<br>
+&nbsp;&nbsp;END AS price_range<br>
+FROM products<br>
+ORDER BY price;<br><br>
+
+-- Distribution across bins<br>
+SELECT <br>
+&nbsp;&nbsp;WIDTH_BUCKET(price, 0, 1000, 10) AS bin,<br>
+&nbsp;&nbsp;COUNT(*) AS frequency,<br>
+&nbsp;&nbsp;MIN(price) AS bin_min,<br>
+&nbsp;&nbsp;MAX(price) AS bin_max<br>
+FROM products<br>
+GROUP BY bin<br>
+ORDER BY bin;
+            </div>
+
+            <h3>Rank Correlation - Spearman's</h3>
+            <div class="code-block">
+-- Approximate Spearman correlation using ranks<br>
+WITH ranks AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;product_id,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;RANK() OVER (ORDER BY price) AS price_rank,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;RANK() OVER (ORDER BY rating) AS rating_rank<br>
+&nbsp;&nbsp;FROM products<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;CORR(price_rank, rating_rank) AS spearman_correlation<br>
+FROM ranks;
+            </div>
+
+            <h3>Chi-Square Test (Contingency Table)</h3>
+            <div class="code-block">
+-- Analyze relationship between categorical variables<br>
+WITH contingency AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;in_stock,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;COUNT(*) AS observed<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;GROUP BY category, in_stock<br>
+),<br>
+totals AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;SUM(observed) AS grand_total,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;category,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SUM(observed) AS row_total<br>
+&nbsp;&nbsp;FROM contingency<br>
+&nbsp;&nbsp;GROUP BY category<br>
+),<br>
+col_totals AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;in_stock,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SUM(observed) AS col_total<br>
+&nbsp;&nbsp;FROM contingency<br>
+&nbsp;&nbsp;GROUP BY in_stock<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;c.category,<br>
+&nbsp;&nbsp;c.in_stock,<br>
+&nbsp;&nbsp;c.observed,<br>
+&nbsp;&nbsp;ROUND(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(t.row_total::NUMERIC * ct.col_total / <br>
+&nbsp;&nbsp;&nbsp;&nbsp;(SELECT SUM(observed) FROM contingency))::NUMERIC, <br>
+&nbsp;&nbsp;&nbsp;&nbsp;2<br>
+&nbsp;&nbsp;) AS expected,<br>
+&nbsp;&nbsp;ROUND(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;POWER(c.observed - (t.row_total::NUMERIC * ct.col_total / <br>
+&nbsp;&nbsp;&nbsp;&nbsp;(SELECT SUM(observed) FROM contingency)), 2) /<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(t.row_total::NUMERIC * ct.col_total / <br>
+&nbsp;&nbsp;&nbsp;&nbsp;(SELECT SUM(observed) FROM contingency))::NUMERIC,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;4<br>
+&nbsp;&nbsp;) AS chi_square_component<br>
+FROM contingency c<br>
+JOIN totals t ON c.category = t.category<br>
+JOIN col_totals ct ON c.in_stock = ct.in_stock<br>
+ORDER BY c.category, c.in_stock;
+            </div>
+
+            <div class="highlight">
+                <h3>Statistical Best Practices</h3>
+                <ul>
+                    <li><strong>Sample size:</strong> Ensure adequate sample size (n ≥ 30 for normal approximations)</li>
+                    <li><strong>Outliers:</strong> Identify and handle outliers before analysis</li>
+                    <li><strong>Distribution:</strong> Check data distribution (use histograms, Q-Q plots)</li>
+                    <li><strong>Correlation ≠ Causation:</strong> High correlation doesn't imply causal relationship</li>
+                    <li><strong>Use appropriate statistics:</strong> Mean for normal data, median for skewed data</li>
+                    <li><strong>Standardization:</strong> Use z-scores when comparing different scales</li>
+                    <li><strong>Window functions:</strong> Efficient for rolling statistics</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <h3>When to Use Each Statistic</h3>
+                <ul>
+                    <li><strong>Mean:</strong> Symmetric distributions, no outliers</li>
+                    <li><strong>Median:</strong> Skewed distributions, presence of outliers</li>
+                    <li><strong>Mode:</strong> Categorical data, finding most common value</li>
+                    <li><strong>Std Dev:</strong> Measuring spread in normal distributions</li>
+                    <li><strong>IQR:</strong> Robust measure of spread, handles outliers well</li>
+                    <li><strong>Percentiles:</strong> Understanding distribution, setting thresholds</li>
+                    <li><strong>Correlation:</strong> Linear relationships between variables</li>
+                    <li><strong>Rank correlation:</strong> Monotonic (not necessarily linear) relationships</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="cleaning" class="section">
+            <h2>Data Cleaning & Transformation</h2>
+            <p style="color: var(--text-dim); margin-bottom: 1%;">Master data cleaning with CASE, COALESCE, string manipulation, and transformation techniques</p>
+
+            <h3>Handling NULL Values</h3>
+            <div class="code-block">
+-- COALESCE - Return first non-NULL value<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;COALESCE(description, 'No description available') AS description,<br>
+&nbsp;&nbsp;COALESCE(weight, 0) AS weight,<br>
+&nbsp;&nbsp;COALESCE(price, avg_price, 0) AS price<br>
+FROM products;<br><br>
+
+-- NULLIF - Return NULL if values are equal<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;NULLIF(stock_quantity, 0) AS stock,  -- NULL instead of 0<br>
+&nbsp;&nbsp;NULLIF(discount, '') AS discount      -- NULL for empty strings<br>
+FROM products;<br><br>
+
+-- Replace NULL with default in calculations<br>
+SELECT <br>
+&nbsp;&nbsp;order_id,<br>
+&nbsp;&nbsp;amount,<br>
+&nbsp;&nbsp;COALESCE(discount, 0) AS discount,<br>
+&nbsp;&nbsp;amount - COALESCE(discount, 0) AS final_amount<br>
+FROM orders;
+            </div>
+
+            <h3>CASE Statements - Conditional Logic</h3>
+            <div class="code-block">
+-- Simple CASE<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;price,<br>
+&nbsp;&nbsp;CASE price_category<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'budget' THEN 'Affordable'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'mid' THEN 'Moderate'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'premium' THEN 'Expensive'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Unknown'<br>
+&nbsp;&nbsp;END AS category_label<br>
+FROM products;<br><br>
+
+-- Searched CASE (more flexible)<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;price,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price < 20 THEN 'Budget'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price >= 20 AND price < 100 THEN 'Mid-range'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price >= 100 AND price < 500 THEN 'Premium'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price >= 500 THEN 'Luxury'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Unpriced'<br>
+&nbsp;&nbsp;END AS price_tier<br>
+FROM products;<br><br>
+
+-- Multiple conditions<br>
+SELECT <br>
+&nbsp;&nbsp;customer_name,<br>
+&nbsp;&nbsp;total_orders,<br>
+&nbsp;&nbsp;total_spent,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN total_spent > 10000 AND total_orders > 20 THEN 'VIP Gold'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN total_spent > 5000 OR total_orders > 10 THEN 'VIP Silver'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN total_orders > 5 THEN 'Regular'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'New'<br>
+&nbsp;&nbsp;END AS customer_tier<br>
+FROM customer_summary;
+            </div>
+
+            <h3>String Cleaning - Trimming & Padding</h3>
+            <div class="code-block">
+-- Remove whitespace<br>
+SELECT <br>
+&nbsp;&nbsp;TRIM('  Hello World  ') AS trimmed,           -- 'Hello World'<br>
+&nbsp;&nbsp;LTRIM('  Hello World  ') AS left_trim,        -- 'Hello World  '<br>
+&nbsp;&nbsp;RTRIM('  Hello World  ') AS right_trim,       -- '  Hello World'<br>
+&nbsp;&nbsp;TRIM(BOTH ' ' FROM '  Hello  ') AS both;      -- 'Hello'<br><br>
+
+-- Remove specific characters<br>
+SELECT <br>
+&nbsp;&nbsp;TRIM(BOTH '.' FROM '...data...') AS clean,    -- 'data'<br>
+&nbsp;&nbsp;TRIM(LEADING '0' FROM '000123') AS no_leading,-- '123'<br>
+&nbsp;&nbsp;TRIM(TRAILING 'x' FROM 'textxxx') AS no_trail;-- 'text'<br><br>
+
+-- Add padding<br>
+SELECT <br>
+&nbsp;&nbsp;LPAD('42', 5, '0') AS padded_left,            -- '00042'<br>
+&nbsp;&nbsp;RPAD('ID', 10, '-') AS padded_right,          -- 'ID--------'<br>
+&nbsp;&nbsp;LPAD(id::TEXT, 8, '0') AS order_id<br>
+FROM orders;
+            </div>
+
+            <h3>String Case Conversion</h3>
+            <div class="code-block">
+-- Change case<br>
+SELECT <br>
+&nbsp;&nbsp;UPPER('hello world') AS uppercase,            -- 'HELLO WORLD'<br>
+&nbsp;&nbsp;LOWER('HELLO WORLD') AS lowercase,            -- 'hello world'<br>
+&nbsp;&nbsp;INITCAP('hello world') AS titlecase;          -- 'Hello World'<br><br>
+
+-- Clean inconsistent data<br>
+UPDATE customers<br>
+SET email = LOWER(TRIM(email)),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name = INITCAP(TRIM(name))<br>
+WHERE email != LOWER(TRIM(email));
+            </div>
+
+            <h3>String Extraction - SUBSTRING</h3>
+            <div class="code-block">
+-- SUBSTRING / SUBSTR<br>
+SELECT <br>
+&nbsp;&nbsp;SUBSTRING('PostgreSQL', 1, 6) AS sub1,        -- 'Postgr'<br>
+&nbsp;&nbsp;SUBSTRING('PostgreSQL' FROM 7) AS sub2,       -- 'SQL'<br>
+&nbsp;&nbsp;SUBSTRING('PostgreSQL' FROM 7 FOR 3) AS sub3, -- 'SQL'<br>
+&nbsp;&nbsp;LEFT('PostgreSQL', 4) AS leftmost,            -- 'Post'<br>
+&nbsp;&nbsp;RIGHT('PostgreSQL', 3) AS rightmost;          -- 'SQL'<br><br>
+
+-- Extract parts of codes<br>
+SELECT <br>
+&nbsp;&nbsp;order_code,<br>
+&nbsp;&nbsp;SUBSTRING(order_code, 1, 4) AS year,<br>
+&nbsp;&nbsp;SUBSTRING(order_code, 5, 2) AS month,<br>
+&nbsp;&nbsp;SUBSTRING(order_code, 7) AS sequence<br>
+FROM orders<br>
+WHERE order_code ~ '^[0-9]{8}';
+            </div>
+
+            <h3>String Search & Position</h3>
+            <div class="code-block">
+-- Find position of substring<br>
+SELECT <br>
+&nbsp;&nbsp;POSITION('SQL' IN 'PostgreSQL') AS pos,       -- 7<br>
+&nbsp;&nbsp;STRPOS('PostgreSQL', 'SQL') AS strpos,        -- 7<br>
+&nbsp;&nbsp;POSITION('xyz' IN 'PostgreSQL') AS not_found; -- 0<br><br>
+
+-- Check if string contains substring<br>
+SELECT * FROM products<br>
+WHERE product_name ILIKE '%wireless%';<br><br>
+
+-- Pattern matching<br>
+SELECT * FROM emails<br>
+WHERE email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$';
+            </div>
+
+            <h3>String Replacement</h3>
+            <div class="code-block">
+-- REPLACE - Replace all occurrences<br>
+SELECT <br>
+&nbsp;&nbsp;REPLACE('Hello World', 'World', 'PostgreSQL') AS replaced,<br>
+&nbsp;&nbsp;REPLACE('---data---', '-', '') AS cleaned,<br>
+&nbsp;&nbsp;REPLACE(phone, '-', '') AS phone_digits<br>
+FROM contacts;<br><br>
+
+-- TRANSLATE - Character-by-character replacement<br>
+SELECT <br>
+&nbsp;&nbsp;TRANSLATE('12345', '12345', 'abcde') AS trans1, -- 'abcde'<br>
+&nbsp;&nbsp;TRANSLATE('hello', 'helo', 'HELO') AS trans2;    -- 'HELLO'<br><br>
+
+-- Remove special characters<br>
+SELECT <br>
+&nbsp;&nbsp;TRANSLATE(product_code, '!@#$%', '') AS clean_code<br>
+FROM products;
+            </div>
+
+            <h3>String Concatenation</h3>
+            <div class="code-block">
+-- CONCAT - Join strings (NULL-safe)<br>
+SELECT <br>
+&nbsp;&nbsp;CONCAT(first_name, ' ', last_name) AS full_name,<br>
+&nbsp;&nbsp;CONCAT_WS(', ', city, state, country) AS location,<br>
+&nbsp;&nbsp;first_name || ' ' || last_name AS full_name2<br>
+FROM customers;<br><br>
+
+-- Build formatted strings<br>
+SELECT <br>
+&nbsp;&nbsp;CONCAT('Order #', order_id, ' - ', status) AS order_label,<br>
+&nbsp;&nbsp;'$' || TO_CHAR(amount, 'FM999,999.00') AS formatted_price<br>
+FROM orders;<br><br>
+
+-- Handle NULLs in concatenation<br>
+SELECT <br>
+&nbsp;&nbsp;CONCAT_WS(' ', first_name, middle_name, last_name) AS name,<br>
+&nbsp;&nbsp;COALESCE(first_name || ' ', '') || <br>
+&nbsp;&nbsp;COALESCE(last_name, '') AS name2<br>
+FROM customers;
+            </div>
+
+            <h3>String Splitting</h3>
+            <div class="code-block">
+-- SPLIT_PART - Split by delimiter<br>
+SELECT <br>
+&nbsp;&nbsp;SPLIT_PART('john.doe@example.com', '@', 1) AS username,<br>
+&nbsp;&nbsp;SPLIT_PART('john.doe@example.com', '@', 2) AS domain,<br>
+&nbsp;&nbsp;SPLIT_PART('2026-01-19', '-', 1) AS year,<br>
+&nbsp;&nbsp;SPLIT_PART('apple,banana,orange', ',', 2) AS second_item;<br><br>
+
+-- STRING_TO_ARRAY - Convert to array<br>
+SELECT <br>
+&nbsp;&nbsp;STRING_TO_ARRAY('red,green,blue', ',') AS colors,<br>
+&nbsp;&nbsp;STRING_TO_ARRAY('1|2|3|4|5', '|')::INT[] AS numbers;<br><br>
+
+-- REGEXP_SPLIT_TO_TABLE - Split to rows<br>
+SELECT <br>
+&nbsp;&nbsp;REGEXP_SPLIT_TO_TABLE('apple,banana,orange', ',') AS fruit;
+            </div>
+
+            <h3>Regular Expressions</h3>
+            <div class="code-block">
+-- Pattern matching<br>
+SELECT * FROM customers<br>
+WHERE email ~ '^[a-z]+@[a-z]+\.(com|net|org)$';<br><br>
+
+-- Case-insensitive matching<br>
+SELECT * FROM products<br>
+WHERE product_name ~* 'wireless';<br><br>
+
+-- Extract with regex<br>
+SELECT <br>
+&nbsp;&nbsp;(REGEXP_MATCH(text, '(\d+)-(\d+)-(\d+)'))[1] AS area,<br>
+&nbsp;&nbsp;(REGEXP_MATCH(text, '(\d+)-(\d+)-(\d+)'))[2] AS exchange,<br>
+&nbsp;&nbsp;(REGEXP_MATCH(text, '(\d+)-(\d+)-(\d+)'))[3] AS number<br>
+FROM phone_numbers;<br><br>
+
+-- Replace with regex<br>
+SELECT <br>
+&nbsp;&nbsp;REGEXP_REPLACE('Order 12345', '\d+', 'XXXXX') AS masked,<br>
+&nbsp;&nbsp;REGEXP_REPLACE('  multiple   spaces  ', '\s+', ' ', 'g') AS clean;
+            </div>
+
+            <h3>Removing Duplicates</h3>
+            <div class="code-block">
+-- Find duplicates<br>
+SELECT email, COUNT(*)<br>
+FROM customers<br>
+GROUP BY email<br>
+HAVING COUNT(*) > 1;<br><br>
+
+-- Keep first occurrence, mark others<br>
+WITH ranked AS (<br>
+&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;*,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PARTITION BY email <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY created_at<br>
+&nbsp;&nbsp;&nbsp;&nbsp;) AS rn<br>
+&nbsp;&nbsp;FROM customers<br>
+)<br>
+SELECT * FROM ranked WHERE rn = 1;<br><br>
+
+-- Delete duplicates (keep oldest)<br>
+DELETE FROM customers<br>
+WHERE id IN (<br>
+&nbsp;&nbsp;SELECT id<br>
+&nbsp;&nbsp;FROM (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SELECT <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ROW_NUMBER() OVER (<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PARTITION BY email <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ORDER BY created_at<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) AS rn<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FROM customers<br>
+&nbsp;&nbsp;) ranked<br>
+&nbsp;&nbsp;WHERE rn > 1<br>
+);
+            </div>
+
+            <h3>Data Type Conversion</h3>
+            <div class="code-block">
+-- CAST function<br>
+SELECT <br>
+&nbsp;&nbsp;CAST('123' AS INTEGER) AS int_value,<br>
+&nbsp;&nbsp;CAST('123.45' AS NUMERIC(10,2)) AS decimal_value,<br>
+&nbsp;&nbsp;CAST('2026-01-19' AS DATE) AS date_value,<br>
+&nbsp;&nbsp;CAST('true' AS BOOLEAN) AS bool_value;<br><br>
+
+-- :: operator (PostgreSQL shorthand)<br>
+SELECT <br>
+&nbsp;&nbsp;'123'::INTEGER AS int_val,<br>
+&nbsp;&nbsp;'123.45'::NUMERIC AS num_val,<br>
+&nbsp;&nbsp;'2026-01-19'::DATE AS date_val;<br><br>
+
+-- Safe conversion with TRY<br>
+SELECT <br>
+&nbsp;&nbsp;price_text,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price_text ~ '^\d+\.?\d*$' THEN price_text::NUMERIC<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE NULL<br>
+&nbsp;&nbsp;END AS price_numeric<br>
+FROM products_raw;
+            </div>
+
+            <h3>Standardizing Formats</h3>
+            <div class="code-block">
+-- Phone number formatting<br>
+SELECT <br>
+&nbsp;&nbsp;phone,<br>
+&nbsp;&nbsp;REGEXP_REPLACE(phone, '[^0-9]', '', 'g') AS digits_only,<br>
+&nbsp;&nbsp;REGEXP_REPLACE(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;REGEXP_REPLACE(phone, '[^0-9]', '', 'g'),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'^(\d{3})(\d{3})(\d{4})$',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;'(\1) \2-\3'<br>
+&nbsp;&nbsp;) AS formatted<br>
+FROM contacts;<br><br>
+
+-- Email normalization<br>
+SELECT <br>
+&nbsp;&nbsp;LOWER(TRIM(email)) AS normalized_email,<br>
+&nbsp;&nbsp;SPLIT_PART(LOWER(TRIM(email)), '@', 1) AS username,<br>
+&nbsp;&nbsp;SPLIT_PART(LOWER(TRIM(email)), '@', 2) AS domain<br>
+FROM users;
+            </div>
+
+            <h3>Handling Inconsistent Data</h3>
+            <div class="code-block">
+-- Standardize boolean representations<br>
+SELECT <br>
+&nbsp;&nbsp;status_text,<br>
+&nbsp;&nbsp;CASE LOWER(TRIM(status_text))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'yes' THEN true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'y' THEN true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'true' THEN true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN '1' THEN true<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'no' THEN false<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'n' THEN false<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'false' THEN false<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN '0' THEN false<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE NULL<br>
+&nbsp;&nbsp;END AS status_bool<br>
+FROM import_data;<br><br>
+
+-- Clean currency values<br>
+SELECT <br>
+&nbsp;&nbsp;price_text,<br>
+&nbsp;&nbsp;REPLACE(REPLACE(REPLACE(price_text, '$', ''), ',', ''), ' ', '')::NUMERIC AS price<br>
+FROM products_import;
+            </div>
+
+            <h3>Pivoting Data</h3>
+            <div class="code-block">
+-- Convert rows to columns with CASE<br>
+SELECT <br>
+&nbsp;&nbsp;customer_id,<br>
+&nbsp;&nbsp;SUM(CASE WHEN category = 'Electronics' THEN amount ELSE 0 END) AS electronics,<br>
+&nbsp;&nbsp;SUM(CASE WHEN category = 'Clothing' THEN amount ELSE 0 END) AS clothing,<br>
+&nbsp;&nbsp;SUM(CASE WHEN category = 'Food' THEN amount ELSE 0 END) AS food<br>
+FROM orders o<br>
+JOIN products p ON o.product_id = p.product_id<br>
+GROUP BY customer_id;<br><br>
+
+-- Using FILTER (cleaner syntax)<br>
+SELECT <br>
+&nbsp;&nbsp;customer_id,<br>
+&nbsp;&nbsp;SUM(amount) FILTER (WHERE category = 'Electronics') AS electronics,<br>
+&nbsp;&nbsp;SUM(amount) FILTER (WHERE category = 'Clothing') AS clothing,<br>
+&nbsp;&nbsp;SUM(amount) FILTER (WHERE category = 'Food') AS food<br>
+FROM orders o<br>
+JOIN products p ON o.product_id = p.product_id<br>
+GROUP BY customer_id;
+            </div>
+
+            <h3>Unpivoting Data</h3>
+            <div class="code-block">
+-- Convert columns to rows<br>
+SELECT customer_id, 'Jan' AS month, jan_sales AS sales FROM monthly_sales<br>
+UNION ALL<br>
+SELECT customer_id, 'Feb', feb_sales FROM monthly_sales<br>
+UNION ALL<br>
+SELECT customer_id, 'Mar', mar_sales FROM monthly_sales;<br><br>
+
+-- Using CROSS JOIN with VALUES<br>
+SELECT <br>
+&nbsp;&nbsp;customer_id,<br>
+&nbsp;&nbsp;m.month,<br>
+&nbsp;&nbsp;CASE m.month<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'Jan' THEN jan_sales<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'Feb' THEN feb_sales<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN 'Mar' THEN mar_sales<br>
+&nbsp;&nbsp;END AS sales<br>
+FROM monthly_sales<br>
+CROSS JOIN (VALUES ('Jan'), ('Feb'), ('Mar')) AS m(month);
+            </div>
+
+            <h3>Fuzzy Matching - Similarity</h3>
+            <div class="code-block">
+-- Install pg_trgm extension<br>
+CREATE EXTENSION IF NOT EXISTS pg_trgm;<br><br>
+
+-- Find similar strings<br>
+SELECT <br>
+&nbsp;&nbsp;product_name,<br>
+&nbsp;&nbsp;SIMILARITY(product_name, 'iPhone') AS similarity<br>
+FROM products<br>
+WHERE product_name % 'iPhone'  -- Similar to<br>
+ORDER BY similarity DESC;<br><br>
+
+-- Fuzzy search<br>
+SELECT * FROM customers<br>
+WHERE name % 'John Smith'<br>
+ORDER BY SIMILARITY(name, 'John Smith') DESC<br>
+LIMIT 10;
+            </div>
+
+            <h3>Filling Missing Values</h3>
+            <div class="code-block">
+-- Fill NULLs with previous value (forward fill)<br>
+SELECT <br>
+&nbsp;&nbsp;date,<br>
+&nbsp;&nbsp;temperature,<br>
+&nbsp;&nbsp;COALESCE(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;temperature,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;LAG(temperature) OVER (ORDER BY date)<br>
+&nbsp;&nbsp;) AS filled_temp<br>
+FROM weather_data;<br><br>
+
+-- Fill with average<br>
+WITH avg_price AS (<br>
+&nbsp;&nbsp;SELECT category, AVG(price) AS avg_cat_price<br>
+&nbsp;&nbsp;FROM products<br>
+&nbsp;&nbsp;WHERE price IS NOT NULL<br>
+&nbsp;&nbsp;GROUP BY category<br>
+)<br>
+SELECT <br>
+&nbsp;&nbsp;p.product_name,<br>
+&nbsp;&nbsp;p.category,<br>
+&nbsp;&nbsp;COALESCE(p.price, a.avg_cat_price) AS price<br>
+FROM products p<br>
+LEFT JOIN avg_price a ON p.category = a.category;
+            </div>
+
+            <h3>Data Validation</h3>
+            <div class="code-block">
+-- Check data quality<br>
+SELECT <br>
+&nbsp;&nbsp;'customers' AS table_name,<br>
+&nbsp;&nbsp;COUNT(*) AS total_rows,<br>
+&nbsp;&nbsp;COUNT(*) FILTER (WHERE email IS NULL) AS null_emails,<br>
+&nbsp;&nbsp;COUNT(*) FILTER (WHERE email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$') AS invalid_emails,<br>
+&nbsp;&nbsp;COUNT(DISTINCT email) AS unique_emails,<br>
+&nbsp;&nbsp;COUNT(*) - COUNT(DISTINCT email) AS duplicate_emails<br>
+FROM customers;<br><br>
+
+-- Identify problematic records<br>
+SELECT <br>
+&nbsp;&nbsp;*,<br>
+&nbsp;&nbsp;CASE<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN email IS NULL THEN 'Missing email'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN 'Invalid email'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN age < 0 OR age > 120 THEN 'Invalid age'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WHEN price < 0 THEN 'Negative price'<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ELSE 'Valid'<br>
+&nbsp;&nbsp;END AS data_quality_flag<br>
+FROM customers<br>
+WHERE email IS NULL <br>
+&nbsp;&nbsp;OR email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'<br>
+&nbsp;&nbsp;OR age < 0 OR age > 120;
+            </div>
+
+            <div class="highlight">
+                <h3>Data Cleaning Best Practices</h3>
+                <ul>
+                    <li><strong>Backup first:</strong> Always create backup before bulk updates</li>
+                    <li><strong>Test on sample:</strong> Validate transformations on small dataset first</li>
+                    <li><strong>Document changes:</strong> Keep log of cleaning operations performed</li>
+                    <li><strong>Use transactions:</strong> Wrap bulk updates in BEGIN/COMMIT for rollback capability</li>
+                    <li><strong>Preserve original:</strong> Keep raw data in separate column/table</li>
+                    <li><strong>Validate results:</strong> Check data quality metrics before and after</li>
+                    <li><strong>Handle NULLs explicitly:</strong> Decide on NULL strategy (fill, remove, flag)</li>
+                    <li><strong>Standardize early:</strong> Clean data at import time when possible</li>
+                </ul>
+            </div>
+
+            <div class="highlight">
+                <h3>Common Cleaning Tasks</h3>
+                <ul>
+                    <li><strong>Trim whitespace:</strong> TRIM() on all text imports</li>
+                    <li><strong>Normalize case:</strong> LOWER() for emails, usernames</li>
+                    <li><strong>Remove duplicates:</strong> ROW_NUMBER() with PARTITION BY</li>
+                    <li><strong>Fix phone numbers:</strong> REGEXP_REPLACE to standardize format</li>
+                    <li><strong>Validate emails:</strong> Regex pattern matching</li>
+                    <li><strong>Handle currency:</strong> Remove symbols, convert to numeric</li>
+                    <li><strong>Date parsing:</strong> TO_DATE with explicit format</li>
+                    <li><strong>Fill missing values:</strong> COALESCE with defaults or averages</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="skills" class="section">
+            <h2>PostgreSQL Skill Progression</h2>
+
+            <div class="highlight">
+                <h3>Beginner Level</h3>
+                <span class="skill-badge">Foundation</span>
+                <span class="skill-badge">Setup</span>
+                <span class="skill-badge">Basic SQL</span>
+            </div>
+
+            <div class="skill-grid">
+                <div class="skill-card">
+                    <h4>Installation</h4>
+                    <p>Install and configure PostgreSQL on various platforms</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Basic Queries</h4>
+                    <p>SELECT, INSERT, UPDATE, DELETE operations</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Data Types</h4>
+                    <p>Understanding VARCHAR, INTEGER, DATE, BOOLEAN</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Tables</h4>
+                    <p>CREATE, ALTER, DROP table operations</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Constraints</h4>
+                    <p>PRIMARY KEY, FOREIGN KEY, UNIQUE, NOT NULL</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Basic JOINs</h4>
+                    <p>INNER JOIN, LEFT JOIN, RIGHT JOIN</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h3>Intermediate Level</h3>
+                <span class="skill-badge">Optimization</span>
+                <span class="skill-badge">Advanced Queries</span>
+                <span class="skill-badge">JSON</span>
+            </div>
+
+            <div class="skill-grid">
+                <div class="skill-card">
+                    <h4>Indexing</h4>
+                    <p>Create and optimize B-tree, GIN, BRIN indexes</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Transactions</h4>
+                    <p>BEGIN, COMMIT, ROLLBACK, SAVEPOINT</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Window Functions</h4>
+                    <p>ROW_NUMBER, RANK, LAG, LEAD, PARTITION BY</p>
+                </div>
+                <div class="skill-card">
+                    <h4>CTEs</h4>
+                    <p>Common Table Expressions and recursive queries</p>
+                </div>
+                <div class="skill-card">
+                    <h4>JSONB</h4>
+                    <p>Store and query JSON data efficiently</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Full-Text Search</h4>
+                    <p>tsvector, tsquery, text search operators</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Views</h4>
+                    <p>Create materialized and regular views</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Functions</h4>
+                    <p>Write PL/pgSQL stored procedures</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h3>Advanced Level</h3>
+                <span class="skill-badge">Architecture</span>
+                <span class="skill-badge">Performance</span>
+                <span class="skill-badge">Scale</span>
+            </div>
+
+            <div class="skill-grid">
+                <div class="skill-card">
+                    <h4>Partitioning</h4>
+                    <p>Range, list, and hash partitioning strategies</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Replication</h4>
+                    <p>Streaming replication, logical replication</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Performance Tuning</h4>
+                    <p>EXPLAIN ANALYZE, query optimization, config tuning</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Connection Pooling</h4>
+                    <p>pgBouncer, connection management</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Extensions</h4>
+                    <p>PostGIS, TimescaleDB, pg_stat_statements</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Backup Strategy</h4>
+                    <p>pg_dump, WAL archiving, PITR</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Security</h4>
+                    <p>SSL, row-level security, encryption</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Monitoring</h4>
+                    <p>pg_stat views, logging, alerting</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h3>Expert Level</h3>
+                <span class="skill-badge">Architecture</span>
+                <span class="skill-badge">Enterprise</span>
+            </div>
+
+            <div class="skill-grid">
+                <div class="skill-card">
+                    <h4>High Availability</h4>
+                    <p>Patroni, failover, cluster management</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Sharding</h4>
+                    <p>Citus, horizontal scaling strategies</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Custom Extensions</h4>
+                    <p>C language extensions, custom data types</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Internals</h4>
+                    <p>MVCC, WAL, vacuum processes, buffers</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Cloud Deploy</h4>
+                    <p>RDS, Cloud SQL, managed PostgreSQL</p>
+                </div>
+                <div class="skill-card">
+                    <h4>Migration</h4>
+                    <p>Zero-downtime migrations, version upgrades</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h3>Learning Path Recommendations</h3>
+                <ul>
+                    <li>Master SQL fundamentals before advanced features</li>
+                    <li>Practice with real datasets and production scenarios</li>
+                    <li>Study EXPLAIN plans to understand query execution</li>
+                    <li>Build projects: e-commerce, analytics, API backends</li>
+                    <li>Contribute to PostgreSQL open-source community</li>
+                    <li>Stay updated with release notes and new features</li>
+                    <li>Learn complementary tools: pgAdmin, DBeaver, Datagrip</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Highlight active button - use 'this' context
+            const clickedButton = document.querySelector(`[onclick*="${sectionId}"]`);
+            if (clickedButton) {
+                clickedButton.classList.add('active');
+            }
+            
+            // Scroll to top
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+    </script>
+</body>
+</html>
